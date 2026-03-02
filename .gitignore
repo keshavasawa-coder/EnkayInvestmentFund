@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific data (if you don't want to upload raw data)
+# Note: ranked_funds.csv and master_scheme_table.csv ARE needed for the app.
+# Fund_Performance_*/ # Uncomment if you don't want to upload raw Excel files

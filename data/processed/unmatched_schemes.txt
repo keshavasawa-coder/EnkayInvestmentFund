@@ -1,0 +1,297 @@
+Unmatched schemes (no brokerage data found): 295
+
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - JioBlackRock Flexi Cap Fund
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - Taurus Mid Cap Fund
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - UTI Master Equity Plan Unit Scheme
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - Kotak Contra Fund
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - Bandhan Multi-Factor Fund
+  - Franklin India Multi-Factor Fund
+  - SBI COMMA Fund
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - Sundaram Dividend Yield Fund
+  - *For detailed understanding regarding Information Ratio, click on the below link
+  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - JioBlackRock Money Market Fund
+  - JioBlackRock Low Duration Fund
+  - WhiteOak Capital Ultra Short Duration Fund
+  - JioBlackRock Liquid Fund
+  - Quant Liquid Plan
+  - **As mandated by SEBI, the closing AUM of the previous calendar month have been disclosed, except in case of schemes where the AUM movement within the current calendar month (both upward and downward) is more than 10% cumulatively from the previous disclosed AUM. In such cases, the AUM of the day when this limit of 10% is triggered are displayed, and such disclosed AUM becomes the reference AUM for future disclosure of AUM during that month, for movement of AUM if any
+  - JioBlackRock Overnight Fund
+  - Zerodha Overnight Fund
+  - UTI-Dynamic Bond Fund
+  - JioBlackRock Short Duration Fund
+  - Kotak Bond Short Term Plan
+  - Bank of India Credit Risk Fund
+  - JioBlackRock Arbitrage Fund
+  - Old Bridge Arbitrage Fund
+  - WhiteOak Capital Arbitrage Fund
+  - 360 ONE Gold ETF
+  - 360 ONE Silver ETF
+  - ANGEL ONE Gold ETF
+  - Aditya Birla Sun Life BSE SENSEX ETF
+  - Aditya Birla Sun Life CRISIL 10 Year Gilt ETF
+  - Aditya Birla Sun Life CRISIL Broad Based Gilt ETF
+  - Aditya Birla Sun Life CRISIL Liquid Overnight ETF
+  - Aditya Birla Sun Life Crisil IBX 60:40 SDL+AAA PSU APR 2026 Index Fund
+  - Aditya Birla Sun Life Gold Exchange Traded Fund
+  - Aditya Birla Sun Life Nifty 200 Momentum 30 ETF
+  - Aditya Birla Sun Life Nifty 200 Quality 30 ETF
+  - Aditya Birla Sun Life Nifty Bank ETF
+  - Aditya Birla Sun Life Nifty Healthcare ETF
+  - Aditya Birla Sun Life Nifty PSE ETF
+  - Angel One Nifty 1D Rate Liquid ETF - Growth
+  - Angel One Nifty 50 ETF
+  - Axis BSE Sensex ETF
+  - Axis Nifty 50 ETF
+  - Axis Nifty Bank ETF
+  - Axis Nifty Healthcare ETF
+  - Axis Nifty IT ETF
+  - Axis Nifty India Consumption ETF
+  - Axis Nifty500 Value 50 ETF
+  - BHARAT 22 ETF
+  - BHARAT Bond ETF - April 2030
+  - BHARAT Bond ETF - April 2031
+  - BHARAT Bond ETF - April 2032
+  - BHARAT Bond ETF - April 2033
+  - Bajaj Finserv Nifty 1D Rate Liquid ETF
+  - Bajaj Finserv Nifty 50 ETF
+  - Bajaj Finserv Nifty Bank ETF
+  - Bandhan BSE Sensex ETF
+  - Bandhan Crisil IBX 90:10 SDL Plus Gilt - September 2027 Index Fund
+  - Bandhan Nifty 50 ETF
+  - Baroda BNP Paribas NIFTY Bank ETF
+  - CPSE ETF
+  - Choice Gold ETF
+  - DSP BSE Liquid Rate ETF
+  - DSP BSE SENSEX Next 30 ETF
+  - DSP BSE Sensex ETF
+  - DSP MSCI INDIA ETF
+  - DSP Nifty 1D Rate Liquid ETF
+  - DSP Nifty 50 ETF
+  - DSP Nifty 50 Equal Weight ETF
+  - DSP Nifty Bank ETF
+  - DSP Nifty Healthcare ETF
+  - DSP Nifty IT ETF
+  - DSP Nifty Midcap 150 ETF
+  - DSP Nifty Next 50 ETF
+  - DSP Nifty PSU Bank ETF
+  - DSP Nifty Private Bank ETF
+  - DSP Nifty Smallcap 250 ETF
+  - DSP Nifty Top 10 Equal Weight ETF
+  - DSP Nifty500 Flexicap Quality 30 ETF
+  - Edelweiss BSE Capital Markets & Insurance ETF
+  - Edelweiss Gold ETF
+  - Edelweiss Nifty Bank ETF
+  - Groww Nifty 1D Rate Liquid ETF
+  - Groww Nifty 500 Low Volatility 50 ETF
+  - Groww Nifty Chemicals ETF
+  - Groww Nifty Metal ETF
+  - Groww Nifty Midcap 150 ETF
+  - Groww Nifty Next 50 ETF
+  - Groww Nifty Realty ETF
+  - HDFC BSE 500 ETF
+  - HDFC BSE Sensex ETF
+  - HDFC Gold ETF
+  - HDFC Nifty 100 ETF
+  - HDFC Nifty 1D Rate Liquid ETF - Growth
+  - HDFC Nifty 200 MOMENTUM 30 ETF
+  - HDFC Nifty 50 ETF
+  - HDFC Nifty Bank ETF
+  - HDFC Nifty Growth Sectors 15 ETF
+  - HDFC Nifty IT ETF
+  - HDFC Nifty Midcap 150 ETF
+  - HDFC Nifty NEXT 50 ETF
+  - HDFC Nifty PSU Bank ETF
+  - HDFC Nifty Private Bank ETF
+  - HDFC Nifty Smallcap 250 ETF
+  - HDFC Nifty100 Low Volatility 30 ETF
+  - HDFC Nifty50 Value 20 ETF
+  - HDFC Silver ETF
+  - ICICI Prudential BSE Liquid Rate ETF - Growth
+  - ICICI Prudential BSE Midcap Select ETF
+  - ICICI Prudential Nifty 10 yr Benchmark G-sec ETF
+  - ICICI Prudential Nifty 100 ETF
+  - ICICI Prudential Nifty 200 Quality 30 ETF
+  - ICICI Prudential Nifty 5 yr Benchmark G-SEC ETF
+  - ICICI Prudential Nifty FMCG ETF
+  - ICICI Prudential Nifty Financial Services Ex-Bank ETF
+  - ICICI Prudential Nifty Healthcare ETF
+  - ICICI Prudential Nifty India Consumption ETF
+  - ICICI Prudential Nifty Metal ETF
+  - ICICI Prudential Nifty Oil & Gas ETF
+  - ICICI Prudential Nifty PSU Bank ETF
+  - Invesco India Gold Exchange Traded Fund
+  - Invesco India Nifty 50 Exchange Traded Fund
+  - JioBlackRock Nifty 50 Index Fund
+  - JioBlackRock Nifty 8-13 yr G-Sec Index Fund
+  - Kotak BSE Sensex ETF
+  - Kotak MSCI India ETF
+  - Kotak Nifty 100 Equal Weight ETF
+  - Kotak Nifty 100 Low Volatility 30 ETF
+  - Kotak Nifty 1D Rate Liquid ETF
+  - Kotak Nifty 50 ETF
+  - Kotak Nifty 50 Value 20 ETF
+  - Kotak Nifty Alpha 50 ETF
+  - Kotak Nifty Bank ETF
+  - Kotak Nifty Chemicals ETF
+  - Kotak Nifty IT ETF
+  - Kotak Nifty India Consumption ETF
+  - Kotak Nifty MNC ETF
+  - Kotak Nifty Midcap 150 ETF
+  - Kotak Nifty Midcap 50 ETF
+  - Kotak Nifty Next 50 ETF
+  - Kotak Nifty PSU Bank ETF
+  - Kotak Nifty200 Quality 30 ETF
+  - LIC MF BSE Sensex ETF
+  - LIC MF Gold Exchange Traded Fund
+  - LIC MF Nifty 100 ETF
+  - LIC MF Nifty 50 ETF
+  - LIC MF Nifty 8-13 yr G-Sec ETF
+  - LIC MF Nifty Midcap 100 ETF
+  - Mirae Asset BSE 500 Dividend Leaders 50 ETF
+  - Mirae Asset BSE Sensex ETF
+  - Mirae Asset ETF - Nifty 50 (MAN50ETF)
+  - Mirae Asset ETF - Nifty Next 50 (MANXT50ETF)
+  - Mirae Asset Nifty 100 Low Volatility 30 ETF
+  - Mirae Asset Nifty 1D Rate Liquid ETF
+  - Mirae Asset Nifty 50 Equal Weight ETF
+  - Mirae Asset Nifty 8-13 yr G-Sec ETF
+  - Mirae Asset Nifty Bank ETF
+  - Mirae Asset Nifty EV and New Age Automotive ETF
+  - Mirae Asset Nifty Energy ETF
+  - Mirae Asset Nifty Financial Services ETF
+  - Mirae Asset Nifty IT ETF
+  - Mirae Asset Nifty India Internet ETF
+  - Mirae Asset Nifty Metal ETF
+  - Mirae Asset Nifty Midcap 150 ETF
+  - Mirae Asset Nifty PSU Bank ETF
+  - Mirae Asset Nifty Smallcap 250 ETF
+  - Mirae Asset Nifty Top 20 Equal Weight ETF
+  - Mirae Asset Nifty500 Multicap 50:25:25 ETF
+  - Mirae Asset Silver ETF
+  - Motilal Oswal BSE Enhanced Value ETF
+  - Motilal Oswal BSE Healthcare ETF
+  - Motilal Oswal Gold ETF
+  - Motilal Oswal Nasdaq 100 ETF (MOSt Shares NASDAQ 100)
+  - Motilal Oswal Nasdaq Q50 ETF
+  - Motilal Oswal Nifty 100 ETF
+  - Motilal Oswal Nifty 5 year Benchmark G-Sec ETF
+  - Motilal Oswal Nifty 50 Equal Weight ETF
+  - Motilal Oswal Nifty 500 ETF
+  - Motilal Oswal Nifty Alpha 50 ETF
+  - Motilal Oswal Nifty Energy ETF
+  - Motilal Oswal Nifty India Tourism ETF
+  - Motilal Oswal Nifty M50 ETF (MOSt Shares M50)
+  - Motilal Oswal Nifty MNC ETF
+  - Motilal Oswal Nifty Midcap 100 ETF (MOSt Shares M100)
+  - Motilal Oswal Nifty PSE ETF
+  - Motilal Oswal Nifty Realty ETF
+  - Motilal Oswal Nifty Services Sector ETF
+  - Motilal Oswal Silver ETF
+  - Nippon India ETF BSE Sensex
+  - Nippon India ETF Gold BeES
+  - Nippon India ETF Hang Seng BeES
+  - Nippon India ETF Nifty 100
+  - Nippon India ETF Nifty 1D Rate Liquid BeES
+  - Nippon India ETF Nifty 5 yr Benchmark G-Sec
+  - Nippon India ETF Nifty 50 BeES
+  - Nippon India ETF Nifty 50 Shariah BeES
+  - Nippon India ETF Nifty 8-13 yr G-Sec Long Term Gilt
+  - Nippon India ETF Nifty Bank BeES
+  - Nippon India ETF Nifty Dividend Opportunities 50
+  - Nippon India ETF Nifty IT
+  - Nippon India ETF Nifty Infrastructure BeES
+  - Nippon India ETF Nifty PSU Bank BeES
+  - Nippon India ETF Nifty SDL Apr 2026 Top 20 Equal Weight
+  - Nippon India Nifty 1D Rate Liquid ETF
+  - Nippon India Nifty Auto ETF
+  - Nippon India Nifty Pharma ETF
+  - Nippon India Silver ETF
+  - Quantum Gold Fund
+  - SBI BSE 100 ETF
+  - SBI BSE PSU BANK ETF
+  - SBI BSE Sensex ETF
+  - SBI BSE Sensex Next 50 ETF
+  - SBI Gold ETF
+  - SBI NIFTY 1D Rate Liquid ETF - Growth
+  - SBI Nifty 10yr Benchmark G-sec ETF
+  - SBI Nifty 200 Quality 30 ETF
+  - SBI Nifty 50 ETF
+  - SBI Nifty Bank ETF
+  - SBI Nifty Consumption ETF
+  - SBI Nifty IT ETF
+  - SBI Nifty Next 50 ETF
+  - SBI Nifty Private Bank ETF
+  - SBI Nifty50 Equal Weight ETF
+  - Shriram Nifty 1D Rate Liquid ETF
+  - Tata Gold Exchange Traded Fund
+  - Tata Nifty 50 Exchange Traded Fund
+  - Tata Nifty Private Bank ETF
+  - Tata Silver Exchange Traded Fund
+  - UTI BSE Sensex ETF
+  - UTI BSE Sensex Next 50 ETF
+  - UTI Gold Exchange Traded Fund
+  - UTI Nifty 10 yr Benchmark G-Sec ETF
+  - UTI Nifty 5 yr Benchmark G-Sec ETF
+  - UTI Nifty 50 ETF
+  - UTI Nifty Bank ETF
+  - UTI Nifty IT ETF
+  - UTI Nifty Midcap 150 ETF
+  - UTI Nifty Next 50 Exchange Traded Fund
+  - UTI Silver Exchange Traded Fund
+  - Zerodha ELSS Tax Saver Nifty LargeMidcap 250 Index Fund
+  - Zerodha Gold ETF
+  - Zerodha Nifty 100 ETF
+  - Zerodha Nifty 1D Rate Liquid ETF
+  - Zerodha Nifty 50 ETF
+  - Zerodha Nifty 8-13 Yr G-Sec ETF
+  - Zerodha Nifty Midcap 150 ETF
+  - Zerodha Nifty Short Duration G-Sec Index Fund
+  - Zerodha Nifty Smallcap 100 ETF
+  - Zerodha Silver ETF
+  - ANGEL ONE Gold ETF FOF
+  - Aditya Birla Sun Life US Equity Passive FOF
+  - Aditya Birla Sun Life US Treasury 1-3 Year Bonds ETFs Passive FOF
+  - Aditya Birla Sun Life US Treasury 3-10 Year Bonds ETFs Passive FOF
+  - Axis Global Innovation Fund of Fund
+  - Axis Silver Fund of Fund
+  - BHARAT Bond ETF FOF - April 2032
+  - BHARAT Bond ETF FOF - April 2033
+  - BHARAT Bond FOF - April 2030
+  - BHARAT Bond FOF - April 2031
+  - Bandhan Multi-Asset Passive FOF
+  - HDFC Developed World Overseas Equity Passive FOF
+  - HDFC Multi-Asset Active FOF
+  - ICICI Prudential BHARAT 22 FOF
+  - ICICI Prudential Passive Multi - Asset Fund of Funds
+  - Invesco India - Invesco EQQQ Nasdaq -100 ETF Fund of Fund
+  - Mirae Asset Gold ETF Fund of Fund
+  - Navi Nasdaq100 US Specific Equity Passive FOF
+  - Navi Total Stock Market US Specific Equity Passive FoF
+  - Quantum Nifty 50 ETF Fund of Fund
+  - SBI US Specific Equity Active FoF
+  - Zerodha Gold ETF FOF
+  - Zerodha Multi Asset Passive FOF
+  - Zerodha Silver ETF FOF
