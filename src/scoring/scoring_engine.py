@@ -183,7 +183,7 @@ def main(weights: dict = None):
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     result.to_csv(OUT_PATH, index=False)
 
-    print(f"\n✅ ranked_funds.csv saved → {OUT_PATH}")
+    print(f"\n[OK] ranked_funds.csv saved -> {OUT_PATH}")
     print(f"   Rows: {len(result)}  (= {len(df)} funds × {len(effective_weights)} risk profiles)")
     print(f"   Composite score range: {result['composite_score'].min():.1f} – {result['composite_score'].max():.1f}")
 

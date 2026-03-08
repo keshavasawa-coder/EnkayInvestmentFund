@@ -95,7 +95,7 @@ def load_folder(category: str, folder_name: str) -> pd.DataFrame:
             df["sub_category"] = get_subcategory(fname)
             df["source_file"] = fname
             frames.append(df)
-            print(f"  ✓ {fname}: {len(df)} funds → [{df['sub_category'].iloc[0]}]")
+            print(f"  [OK] {fname}: {len(df)} funds -> [{df['sub_category'].iloc[0]}]")
         except Exception as e:
             print(f"  [ERROR] {fname}: {e}")
 
@@ -159,11 +159,25 @@ def main():
     combined = pd.concat(all_frames, ignore_index=True)
     combined = normalise_columns(combined)
 
+    # Filter out invalid scheme names (non-fund entries)
+    invalid_patterns = [
+        "For detailed understanding regarding Information Ratio",
+        "amfiindia.com/otherdata/fund-performance/information-ratio",
+        "As mandated by SEBI",
+        "closing AUM of the previous calendar month",
+    ]
+    mask = ~combined["scheme_name"].str.contains("|".join(invalid_patterns), case=False, na=False)
+    removed_count = len(combined) - mask.sum()
+    combined = combined[mask].reset_index(drop=True)
+    
+    if removed_count > 0:
+        print(f"   Removed {removed_count} non-fund entries (metadata rows)")
+
     # Extract AMC name from scheme name (first 1-3 words heuristic; refined later in merge step)
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     combined.to_csv(OUT_PATH, index=False)
 
-    print(f"\n✅ scheme_performance.csv saved → {OUT_PATH}")
+    print(f"\n[OK] scheme_performance.csv saved -> {OUT_PATH}")
     print(f"   Total funds: {len(combined)}")
     print(f"   Categories: {combined['category'].value_counts().to_dict()}")
     print(f"   Sub-categories ({combined['sub_category'].nunique()}): {sorted(combined['sub_category'].unique().tolist())}")

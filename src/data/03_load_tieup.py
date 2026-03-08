@@ -74,7 +74,7 @@ def main():
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     result.to_csv(OUT_PATH, index=False)
 
-    print(f"\n✅ tieup_flags.csv saved → {OUT_PATH}")
+    print(f"\n[OK] tieup_flags.csv saved -> {OUT_PATH}")
     print(f"   A-Category AMCs: {(result['tieup_category'] == 'A').sum()}")
     print(f"   B-Category AMCs: {(result['tieup_category'] == 'B').sum()}")
     print(f"\n   A-Category AMCs:\n{result[result['tieup_category']=='A']['amc_name'].to_string(index=False)}")

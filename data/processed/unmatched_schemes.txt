@@ -1,43 +1,20 @@
-Unmatched schemes (no brokerage data found): 295
+Unmatched schemes (no brokerage data found): 272
 
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
   - JioBlackRock Flexi Cap Fund
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
   - Taurus Mid Cap Fund
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
   - UTI Master Equity Plan Unit Scheme
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - Invesco India Contra Fund
   - Kotak Contra Fund
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
+  - SBI Contra Fund
   - Bandhan Multi-Factor Fund
   - Franklin India Multi-Factor Fund
   - SBI COMMA Fund
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
   - Sundaram Dividend Yield Fund
-  - *For detailed understanding regarding Information Ratio, click on the below link
-  - amfiindia.com/otherdata/fund-performance/information-ratio
   - JioBlackRock Money Market Fund
   - JioBlackRock Low Duration Fund
   - WhiteOak Capital Ultra Short Duration Fund
   - JioBlackRock Liquid Fund
   - Quant Liquid Plan
-  - **As mandated by SEBI, the closing AUM of the previous calendar month have been disclosed, except in case of schemes where the AUM movement within the current calendar month (both upward and downward) is more than 10% cumulatively from the previous disclosed AUM. In such cases, the AUM of the day when this limit of 10% is triggered are displayed, and such disclosed AUM becomes the reference AUM for future disclosure of AUM during that month, for movement of AUM if any
   - JioBlackRock Overnight Fund
   - Zerodha Overnight Fund
   - UTI-Dynamic Bond Fund

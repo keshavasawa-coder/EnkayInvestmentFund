@@ -1,12 +1,13 @@
 """
 app.py – Enkay Investments Fund Recommendation Analytics Dashboard
-Streamlit application with 6 tabs:
+Streamlit application with 7 tabs:
   1. 🏆 Fund Ranker
   2. 🔍 Peer Comparison
   3. 📋 Portfolio Exposure Review
   4. 🔄 Fund Shift Advisor
   5. 🏦 AMC Concentration
   6. 📊 Brokerage vs Performance
+  7. 📦 Recommended Portfolios
 """
 import os, sys
 import numpy as np
@@ -35,6 +36,7 @@ from analysis.portfolio_review    import (
     get_alternatives_for_flagged,
     AUM_THRESHOLDS,
 )
+from analysis.portfolio_builder   import build_portfolio, get_portfolio_stats, PORTFOLIO_BASKETS, BASKET_NAMES
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -52,7 +54,7 @@ st.markdown("""
 
   /* Header gradient band */
   .main-header {
-    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
     padding: 28px 32px 20px 32px;
     border-radius: 12px;
     margin-bottom: 24px;
@@ -63,15 +65,15 @@ st.markdown("""
 
   /* Metric cards */
   .metric-card {
-    background: linear-gradient(145deg, #1e293b, #0f172a);
-    border: 1px solid #334155;
+    background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
+    border: 1px solid #cbd5e1;
     border-radius: 10px;
     padding: 16px 20px;
-    color: white;
+    color: #1e293b;
     text-align: center;
   }
-  .metric-card .value { font-size: 2rem; font-weight: 700; color: #38bdf8; }
-  .metric-card .label { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+  .metric-card .value { font-size: 2rem; font-weight: 700; color: #3b82f6; }
+  .metric-card .label { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
 
   /* TieUp badges */
   .badge-A    { background:#10b981; color:white; padding:2px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; }
@@ -82,7 +84,7 @@ st.markdown("""
   .alert-box { background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; padding:12px 16px; color:#991b1b; }
 
   /* Section headers */
-  .section-title { font-size:1.1rem; font-weight:600; color:#0f172a; margin:20px 0 12px 0; border-left:4px solid #3b82f6; padding-left:10px; }
+  .section-title { font-size:1.1rem; font-weight:600; color:#1e293b; margin:20px 0 12px 0; border-left:4px solid #3b82f6; padding-left:10px; }
 
   /* Streamlit table tweaks */
   .stDataFrame { border-radius: 8px; overflow: hidden; }
@@ -127,7 +129,7 @@ def score_bar(score, max_score=100):
     """Return a small HTML progress-like bar for a score."""
     pct = min(int(score / max_score * 100), 100)
     color = "#10b981" if pct >= 70 else "#f59e0b" if pct >= 40 else "#ef4444"
-    return f'<div style="background:#334155;border-radius:4px;height:8px;width:100%"><div style="background:{color};border-radius:4px;height:8px;width:{pct}%"></div></div>'
+    return f'<div style="background:#e2e8f0;border-radius:4px;height:8px;width:100%"><div style="background:{color};border-radius:4px;height:8px;width:{pct}%"></div></div>'
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -139,8 +141,23 @@ PROFILE_DEFAULTS = {
     "aggressive":   {"w_return": 40, "w_alpha": 15, "w_brokerage": 20, "w_aum": 20},
 }
 
+PAGES = [
+    "🏆 Fund Ranker",
+    "🔍 Peer Comparison",
+    "📋 Portfolio Exposure Review",
+    "🔄 Fund Shift Advisor",
+    "🏦 AMC Concentration",
+    "📊 Brokerage vs Performance",
+    "📦 Recommended Portfolios",
+]
+
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/investment-portfolio.png", width=60)
+    st.markdown("## 📌 Navigation")
+    
+    selected_page = st.radio("Go to", PAGES, label_visibility="collapsed")
+    
+    st.markdown("---")
     st.markdown("## ⚙️ Settings")
 
     risk_profile = st.selectbox(
@@ -156,38 +173,6 @@ with st.sidebar:
         for key, val in PROFILE_DEFAULTS[risk_profile].items():
             st.session_state[key] = val
         st.session_state["_last_profile"] = risk_profile
-
-    st.markdown("---")
-    st.markdown("### Score Weights")
-    st.caption("Auto-set by Risk Profile — or override manually below.")
-    w_return    = st.slider("Return Score",    0, 60, step=5,
-                            key="w_return",    help="Weight for 1Y/3Y/5Y returns")
-    w_alpha     = st.slider("Alpha Score",     0, 30, step=5,
-                            key="w_alpha",     help="Weight for Information Ratio")
-    w_brokerage = st.slider("Brokerage Score", 0, 60, step=5,
-                            key="w_brokerage")
-    w_aum       = st.slider("AUM Score",       0, 40, step=5,
-                            key="w_aum",       help="Weight for fund size reliability")
-
-    # TieUp is fixed at 5% — shown as read-only info
-    W_TIEUP_FIXED = 5
-    st.info(f"🔒 TieUp Bonus: **{W_TIEUP_FIXED}%** (fixed across all profiles)")
-
-    adjustable_total = w_return + w_alpha + w_brokerage + w_aum
-    total_w = adjustable_total + W_TIEUP_FIXED
-    if total_w == 0:
-        total_w = 1
-    if adjustable_total != 95:
-        st.warning(f"Adjustable weights sum to {adjustable_total}% (target: 95%). "
-                   f"Total incl. TieUp = {total_w}%. Normalising automatically.")
-
-    custom_weights = {
-        "return":    w_return        / total_w,
-        "alpha":     w_alpha         / total_w,
-        "brokerage": w_brokerage     / total_w,
-        "aum":       w_aum           / total_w,
-        "tieup":     W_TIEUP_FIXED   / total_w,
-    }
 
     st.markdown("---")
     st.caption("Enkay Investments | Fund Analytics v1.0")
@@ -224,10 +209,54 @@ def apply_custom_weights(weights_tuple, profile):
     weights = dict(zip(["return", "alpha", "brokerage", "aum", "tieup"], weights_tuple))
     return rank_all(master_df.copy(), profile, weights)
 
-weights_tuple = (custom_weights["return"], custom_weights["alpha"],
-                 custom_weights["brokerage"], custom_weights["aum"],
-                 custom_weights["tieup"])
+weights_tuple = (0.35, 0.10, 0.30, 0.20, 0.05)
 active_df = apply_custom_weights(weights_tuple, risk_profile)
+
+# ── Score Weights Sidebar (Right) ─────────────────────────────────────────────
+with st.expander("⚖️ Score Weights", expanded=False):
+    st.markdown("#### Adjust Score Weights")
+    st.caption("Auto-set by Risk Profile — or override manually below.")
+    
+    # Get default weights for the selected risk profile
+    default_weights = PROFILE_DEFAULTS[risk_profile]
+    
+    # Reset slider values when risk profile changes
+    if st.session_state.get("_last_weight_profile") != risk_profile:
+        st.session_state["w_return2"] = default_weights["w_return"]
+        st.session_state["w_alpha2"] = default_weights["w_alpha"]
+        st.session_state["w_brokerage2"] = default_weights["w_brokerage"]
+        st.session_state["w_aum2"] = default_weights["w_aum"]
+        st.session_state["_last_weight_profile"] = risk_profile
+    
+    w_return    = st.slider("Return Score",    0, 60, step=5,
+                            key="w_return2",    help="Weight for 1Y/3Y/5Y returns")
+    w_alpha     = st.slider("Alpha Score",     0, 30, step=5,
+                            key="w_alpha2",     help="Weight for Information Ratio")
+    w_brokerage = st.slider("Brokerage Score", 0, 60, step=5,
+                            key="w_brokerage2")
+    w_aum       = st.slider("AUM Score",       0, 40, step=5,
+                            key="w_aum2",       help="Weight for fund size reliability")
+
+    W_TIEUP_FIXED = 5
+    st.info(f"🔒 TieUp Bonus: **{W_TIEUP_FIXED}%** (fixed across all profiles)")
+
+    adjustable_total = w_return + w_alpha + w_brokerage + w_aum
+    total_w = adjustable_total + W_TIEUP_FIXED
+    if total_w == 0:
+        total_w = 1
+    
+    custom_weights = {
+        "return":    w_return        / total_w,
+        "alpha":     w_alpha         / total_w,
+        "brokerage": w_brokerage     / total_w,
+        "aum":       w_aum           / total_w,
+        "tieup":     W_TIEUP_FIXED   / total_w,
+    }
+    
+    weights_tuple = (custom_weights["return"], custom_weights["alpha"],
+                     custom_weights["brokerage"], custom_weights["aum"],
+                     custom_weights["tieup"])
+    active_df = apply_custom_weights(weights_tuple, risk_profile)
 
 # ── Top KPI row ───────────────────────────────────────────────────────────────
 col1, col2, col3, col4, col5 = st.columns(5)
@@ -250,20 +279,12 @@ with col5:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Tabs ─────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "🏆 Fund Ranker",
-    "🔍 Peer Comparison",
-    "📋 Portfolio Exposure Review",
-    "🔄 Fund Shift Advisor",
-    "🏦 AMC Concentration",
-    "📊 Brokerage vs Performance",
-])
+# ── Main Content Based on Selected Page ─────────────────────────────────────
 
 # ═══════════════════════════════════════════════════════
-# TAB 1 — FUND RANKER
+# PAGE 1 — FUND RANKER
 # ═══════════════════════════════════════════════════════
-with tab1:
+if selected_page == "🏆 Fund Ranker":
     st.markdown('<div class="section-title">Fund Rankings by Sub-Category</div>', unsafe_allow_html=True)
 
     with st.expander("ℹ️ How Scoring & Ranking Works — click to expand", expanded=False):
@@ -393,9 +414,9 @@ This ensures you always see the best options within the type of fund you are loo
             st.plotly_chart(fig, use_container_width=True)
 
 # ═══════════════════════════════════════════════════════
-# TAB 2 — PEER COMPARISON
+# PAGE 2 — PEER COMPARISON
 # ═══════════════════════════════════════════════════════
-with tab2:
+elif selected_page == "🔍 Peer Comparison":
     st.markdown('<div class="section-title">Select Funds to Compare</div>', unsafe_allow_html=True)
 
     all_funds = sorted(profile_df["scheme_name"].dropna().unique())
@@ -498,9 +519,9 @@ with tab2:
         st.info("👆 Select 2–4 funds above to start comparing.")
 
 # ═══════════════════════════════════════════════════════
-# TAB 3 — PORTFOLIO EXPOSURE REVIEW
+# PAGE 3 — PORTFOLIO EXPOSURE REVIEW
 # ═══════════════════════════════════════════════════════
-with tab3:
+elif selected_page == "📋 Portfolio Exposure Review":
     st.markdown('<div class="section-title">Analyze Your Current Holdings</div>', unsafe_allow_html=True)
     st.markdown(
         "This page shows your current AUM holdings and flags schemes that have high exposure but "
@@ -639,9 +660,9 @@ with tab3:
 
 
 # ═══════════════════════════════════════════════════════
-# TAB 4 — FUND SHIFT ADVISOR
+# PAGE 4 — FUND SHIFT ADVISOR
 # ═══════════════════════════════════════════════════════
-with tab4:
+elif selected_page == "🔄 Fund Shift Advisor":
     st.markdown('<div class="section-title">Find Better-Paying Alternatives</div>', unsafe_allow_html=True)
     st.markdown(
         "Select a fund whose brokerage has dropped or that you want to replace. "
@@ -711,9 +732,9 @@ with tab4:
         st.info("👆 Select a fund above to see suggestions.")
 
 # ═══════════════════════════════════════════════════════
-# TAB 5 — AMC CONCENTRATION
+# PAGE 5 — AMC CONCENTRATION
 # ═══════════════════════════════════════════════════════
-with tab5:
+elif selected_page == "🏦 AMC Concentration":
     st.markdown('<div class="section-title">AMC Exposure — Current Holdings</div>', unsafe_allow_html=True)
     
     st.markdown("### 📊 Current Holdings AMC Concentration")
@@ -796,9 +817,9 @@ with tab5:
             height=300,
         )
 # ═══════════════════════════════════════════════════════
-# TAB 6 — BROKERAGE vs PERFORMANCE
+# PAGE 6 — BROKERAGE vs PERFORMANCE
 # ═══════════════════════════════════════════════════════
-with tab6:
+elif selected_page == "📊 Brokerage vs Performance":
     st.markdown('<div class="section-title">Brokerage vs Returns — Scatter Explorer</div>', unsafe_allow_html=True)
 
     b1, b2, b3 = st.columns(3)
@@ -878,10 +899,10 @@ with tab6:
             showarrow=False, font=dict(size=10, color="#f59e0b"), opacity=0.6)
 
         fig_scatter.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#0f172a",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#ffffff",
             font=dict(family="Inter"),
-            xaxis=dict(gridcolor="#1e293b", zerolinecolor="#334155"),
-            yaxis=dict(gridcolor="#1e293b", zerolinecolor="#334155"),
+            xaxis=dict(gridcolor="#e2e8f0", zerolinecolor="#cbd5e1"),
+            yaxis=dict(gridcolor="#e2e8f0", zerolinecolor="#cbd5e1"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=0, r=0, t=50, b=0),
         )
@@ -923,3 +944,349 @@ with tab6:
                 "Score":      st.column_config.NumberColumn(format="%.1f"),
             }
         )
+
+# ═══════════════════════════════════════════════════════════
+# PAGE 7 — RECOMMENDED PORTFOLIOS
+# ═══════════════════════════════════════════════════════════
+elif selected_page == "📦 Recommended Portfolios":
+    st.markdown('<div class="section-title">Enkay Recommended MF Portfolios</div>', unsafe_allow_html=True)
+
+    with st.expander("ℹ️ What are Recommended Portfolios? — click to expand", expanded=False):
+        st.markdown("""
+**Enkay Recommended Portfolios** are curated baskets of mutual fund schemes, modeled on
+NJ's Recommended MF Portfolio approach but built **by Enkay, for Enkay**.
+
+Each basket defines:
+- **Asset-class allocation** (Equity / Debt / Hybrid %)
+- **Sub-category picks** from which the top-ranked fund is auto-selected
+- **Risk level** indicator
+
+The scoring engine picks the **Rank 1 fund** per sub-category using the active risk profile
+and scoring weights from the sidebar. An **AMC concentration cap** ensures diversification.
+        """)
+
+    # ── Controls ─────────────────────────────────────────────────────────
+    ctrl1, ctrl2, ctrl3 = st.columns([3, 2, 2])
+    with ctrl1:
+        selected_basket = st.selectbox(
+            "Select Portfolio Basket",
+            BASKET_NAMES,
+            index=BASKET_NAMES.index("Balanced - Equity 50"),
+            key="basket_select",
+        )
+    with ctrl2:
+        amc_cap = st.slider(
+            "AMC Concentration Cap",
+            min_value=10, max_value=50, value=30, step=5,
+            format="%d%%",
+            help="Max % of portfolio slots one AMC can occupy.",
+            key="portfolio_amc_cap",
+        )
+    with ctrl3:
+        compare_mode = st.checkbox(
+            "Compare Multiple Baskets",
+            value=False,
+            key="portfolio_compare",
+        )
+
+    amc_cap_frac = amc_cap / 100.0
+
+    # ── All Baskets Overview Table ────────────────────────────────────────
+    with st.expander("📋 View All Available Baskets", expanded=False):
+        overview_rows = []
+        for b in PORTFOLIO_BASKETS:
+            overview_rows.append({
+                "Portfolio": b["name"],
+                "Equity %": b["equity_pct"],
+                "Debt %": b["debt_pct"],
+                "Hybrid %": b["hybrid_pct"],
+                "Schemes": len(b["picks"]),
+                "Risk Level": b["risk_level"],
+            })
+        overview_df = pd.DataFrame(overview_rows)
+        st.dataframe(overview_df, use_container_width=True, height=400)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Single Basket View ───────────────────────────────────────────────
+    if not compare_mode:
+        result = build_portfolio(
+            ranked_df=active_df, basket_name=selected_basket,
+            risk_profile=risk_profile, amc_cap_pct=amc_cap_frac,
+        )
+        portfolio = result["portfolio"]
+        basket = result["basket"]
+        swaps = result["swaps"]
+        missing = result["missing"]
+
+        if portfolio.empty:
+            st.warning("Could not build this portfolio — no matching funds found.")
+        else:
+            stats = get_portfolio_stats(portfolio)
+
+            # ── Basket header card ───────────────────────────────────────
+            risk_colors = {
+                "Low to Moderate": "#10b981",
+                "Moderately High": "#f59e0b",
+                "High": "#f97316",
+                "Very High": "#ef4444",
+            }
+            rcolor = risk_colors.get(basket["risk_level"], "#64748b")
+            eq, dt, hy = basket["equity_pct"], basket["debt_pct"], basket["hybrid_pct"]
+
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,#f8fafc,#e2e8f0);border:1px solid #cbd5e1;
+                        border-radius:12px;padding:20px 28px;margin-bottom:20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                    <div>
+                        <h2 style="margin:0;color:#1e293b;">{basket['name']}</h2>
+                        <span style="background:{rcolor};color:white;padding:4px 14px;border-radius:20px;
+                                     font-size:0.8rem;font-weight:600;">{basket['risk_level']}</span>
+                    </div>
+                    <div style="display:flex;gap:24px;text-align:center;">
+                        <div><div style="font-size:1.8rem;font-weight:700;color:#3b82f6;">{eq}%</div>
+                             <div style="font-size:0.75rem;color:#64748b;">Equity</div></div>
+                        <div><div style="font-size:1.8rem;font-weight:700;color:#10b981;">{dt}%</div>
+                             <div style="font-size:0.75rem;color:#64748b;">Debt</div></div>
+                        <div><div style="font-size:1.8rem;font-weight:700;color:#f59e0b;">{hy}%</div>
+                             <div style="font-size:0.75rem;color:#64748b;">Hybrid</div></div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # ── KPI row ──────────────────────────────────────────────────
+            pk1, pk2, pk3, pk4, pk5 = st.columns(5)
+            with pk1:
+                st.markdown(f'<div class="metric-card"><div class="value">{stats["num_schemes"]}</div><div class="label">Schemes</div></div>', unsafe_allow_html=True)
+            with pk2:
+                st.markdown(f'<div class="metric-card"><div class="value">{stats["weighted_avg_brok"]:.2f}%</div><div class="label">Wtd Avg Brokerage</div></div>', unsafe_allow_html=True)
+            with pk3:
+                st.markdown(f'<div class="metric-card"><div class="value">{stats["weighted_avg_ret1y"]:.2f}%</div><div class="label">Wtd Avg 1Y Return</div></div>', unsafe_allow_html=True)
+            with pk4:
+                st.markdown(f'<div class="metric-card"><div class="value">{stats["num_amcs"]}</div><div class="label">AMCs</div></div>', unsafe_allow_html=True)
+            with pk5:
+                st.markdown(f'<div class="metric-card"><div class="value">{stats["avg_score"]:.1f}</div><div class="label">Avg Score</div></div>', unsafe_allow_html=True)
+
+            # ── Swap alerts ──────────────────────────────────────────────
+            if swaps:
+                st.markdown("<br>", unsafe_allow_html=True)
+                for swap_msg in swaps:
+                    st.warning(f"🔄 {swap_msg}")
+            if missing:
+                st.info(f"ℹ️ Sub-categories not available in data: {', '.join(missing)}")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── Charts row ───────────────────────────────────────────────
+            num_funds = len(portfolio)
+            chart_col1, chart_col2 = st.columns(2)
+
+            with chart_col1:
+                st.markdown('<div class="section-title">Sub-Category Allocation</div>', unsafe_allow_html=True)
+                alloc_df = portfolio[["sub_category", "allocation_pct"]].copy()
+                fig_alloc = px.pie(
+                    alloc_df, values="allocation_pct", names="sub_category",
+                    hole=0.45, color_discrete_sequence=px.colors.qualitative.Set2,
+                )
+                fig_alloc.update_traces(textposition="inside", textinfo="percent+label", textfont_size=11)
+                fig_alloc.update_layout(
+                    height=370, showlegend=False, paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Inter"), margin=dict(l=0, r=0, t=10, b=10),
+                )
+                st.plotly_chart(fig_alloc, use_container_width=True)
+
+            with chart_col2:
+                if num_funds > 1:
+                    st.markdown('<div class="section-title">AMC Distribution</div>', unsafe_allow_html=True)
+                    amc_dist = portfolio["amc"].value_counts().reset_index()
+                    amc_dist.columns = ["AMC", "Funds"]
+                    fig_amc = px.bar(
+                        amc_dist, x="Funds", y="AMC", orientation="h",
+                        color="Funds", color_continuous_scale=["#93c5fd", "#3b82f6", "#1e40af"],
+                        text="Funds",
+                    )
+                    fig_amc.update_traces(textposition="outside")
+                    fig_amc.update_layout(
+                        height=370, showlegend=False, coloraxis_showscale=False,
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(family="Inter"),
+                        xaxis=dict(title="", showticklabels=False),
+                        yaxis=dict(title="", tickfont=dict(size=11)),
+                        margin=dict(l=0, r=30, t=10, b=10),
+                    )
+                    st.plotly_chart(fig_amc, use_container_width=True)
+                else:
+                    st.markdown('<div class="section-title">Fund Details</div>', unsafe_allow_html=True)
+                    fund = portfolio.iloc[0]
+                    st.metric("Scheme", fund["scheme_name"])
+                    st.metric("AMC", fund["amc"])
+                    bval = fund.get("trail_brokerage_incl_gst", None)
+                    st.metric("Brokerage", f"{bval:.2f}%" if pd.notna(bval) else "—")
+
+            # -- Asset-class allocation bar (only if multi-class basket) --
+            if stats.get("category_allocation") and len(stats["category_allocation"]) > 1:
+                st.markdown('<div class="section-title">Allocation by Asset Class</div>', unsafe_allow_html=True)
+                cat_alloc = pd.DataFrame(
+                    list(stats["category_allocation"].items()), columns=["Asset Class", "Allocation %"]
+                ).sort_values("Allocation %", ascending=False)
+                fig_cat = px.bar(
+                    cat_alloc, x="Allocation %", y="Asset Class",
+                    orientation="h", text="Allocation %",
+                    color="Asset Class", color_discrete_sequence=px.colors.qualitative.Pastel,
+                )
+                fig_cat.update_traces(texttemplate="%{text}%", textposition="outside")
+                fig_cat.update_layout(
+                    height=250, showlegend=False,
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Inter"),
+                    xaxis=dict(title="", showticklabels=False), yaxis=dict(title=""),
+                    margin=dict(l=0, r=40, t=10, b=10),
+                )
+                st.plotly_chart(fig_cat, use_container_width=True)
+
+            # ── Selected Funds Table ─────────────────────────────────────
+            st.markdown('<div class="section-title">Selected Funds</div>', unsafe_allow_html=True)
+            fund_display_cols = {
+                "scheme_name":              "Scheme",
+                "amc":                      "AMC",
+                "sub_category":             "Sub-Category",
+                "allocation_pct":           "Allocation %",
+                "tieup_category":           "TieUp",
+                "return_1y_regular":        "1Y Ret%",
+                "return_3y_regular":        "3Y Ret%",
+                "return_5y_regular":        "5Y Ret%",
+                "trail_brokerage_incl_gst": "Brokerage%",
+                "aum_cr":                   "AUM (Cr)",
+                "composite_score":          "Score",
+                "rank":                     "Rank",
+            }
+            show_cols = [c for c in fund_display_cols if c in portfolio.columns]
+            port_display = portfolio[show_cols].rename(columns=fund_display_cols).copy()
+
+            st.dataframe(
+                port_display, use_container_width=True,
+                height=min(440, 60 + 35 * len(port_display)),
+                column_config={
+                    "Allocation %": st.column_config.NumberColumn(format="%d%%"),
+                    "1Y Ret%":      st.column_config.NumberColumn(format="%.2f%%"),
+                    "3Y Ret%":      st.column_config.NumberColumn(format="%.2f%%"),
+                    "5Y Ret%":      st.column_config.NumberColumn(format="%.2f%%"),
+                    "Brokerage%":   st.column_config.NumberColumn(format="%.2f%%"),
+                    "AUM (Cr)":     st.column_config.NumberColumn(format="%,.1f"),
+                    "Score":        st.column_config.NumberColumn(format="%.1f"),
+                },
+            )
+
+            # ── TieUp Summary ────────────────────────────────────────────
+            tu1, tu2, tu3 = st.columns(3)
+            with tu1:
+                st.markdown(f'<div class="metric-card" style="border-left:4px solid #10b981"><div class="value" style="color:#10b981">{stats["tieup_a_count"]}</div><div class="label">A-TieUp Funds</div></div>', unsafe_allow_html=True)
+            with tu2:
+                st.markdown(f'<div class="metric-card" style="border-left:4px solid #3b82f6"><div class="value" style="color:#3b82f6">{stats["tieup_b_count"]}</div><div class="label">B-TieUp Funds</div></div>', unsafe_allow_html=True)
+            with tu3:
+                st.markdown(f'<div class="metric-card" style="border-left:4px solid #94a3b8"><div class="value" style="color:#94a3b8">{stats["no_tieup_count"]}</div><div class="label">No TieUp</div></div>', unsafe_allow_html=True)
+
+    else:
+        # ── Compare Multiple Baskets ─────────────────────────────────────
+        compare_baskets = st.multiselect(
+            "Select Baskets to Compare (2–4):",
+            BASKET_NAMES,
+            default=["Conservative - Equity 30", "Balanced - Equity 50", "Growth - Equity 100"],
+            max_selections=4,
+            key="basket_compare_select",
+        )
+
+        if len(compare_baskets) < 2:
+            st.info("👆 Select at least 2 baskets to compare.")
+        else:
+            all_results = {}
+            all_stats = {}
+            for bname in compare_baskets:
+                r = build_portfolio(ranked_df=active_df, basket_name=bname,
+                                    risk_profile=risk_profile, amc_cap_pct=amc_cap_frac)
+                all_results[bname] = r
+                all_stats[bname] = get_portfolio_stats(r["portfolio"]) if not r["portfolio"].empty else {}
+
+            # ── Comparison cards ─────────────────────────────────────────
+            card_cols = st.columns(len(compare_baskets))
+            card_colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"]
+            for i, (bname, col) in enumerate(zip(compare_baskets, card_cols)):
+                s = all_stats.get(bname, {})
+                b = all_results[bname]["basket"]
+                clr = card_colors[i % len(card_colors)]
+                with col:
+                    st.markdown(f"""
+                    <div style="border:2px solid {clr};border-radius:12px;padding:14px;text-align:center;">
+                        <h4 style="color:{clr};margin:0 0 8px 0;font-size:0.95rem;">{bname}</h4>
+                        <div style="font-size:0.75rem;color:#64748b;margin-bottom:10px;">
+                            Eq {b['equity_pct']}% · Debt {b['debt_pct']}% · Hyb {b['hybrid_pct']}%
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.85rem;">
+                            <div><strong>{s.get('num_schemes', 0)}</strong><br><small style="color:#94a3b8">Schemes</small></div>
+                            <div><strong>{s.get('num_amcs', 0)}</strong><br><small style="color:#94a3b8">AMCs</small></div>
+                            <div><strong>{s.get('weighted_avg_brok', 0):.2f}%</strong><br><small style="color:#94a3b8">Brokerage</small></div>
+                            <div><strong>{s.get('weighted_avg_ret1y', 0):.2f}%</strong><br><small style="color:#94a3b8">1Y Return</small></div>
+                            <div><strong>{s.get('avg_score', 0):.1f}</strong><br><small style="color:#94a3b8">Avg Score</small></div>
+                            <div><strong>{s.get('tieup_a_count', 0)}</strong><br><small style="color:#94a3b8">A-TieUp</small></div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── Combined Table ───────────────────────────────────────────
+            st.markdown('<div class="section-title">Fund Selections Across Baskets</div>', unsafe_allow_html=True)
+            combined_rows = []
+            for bname in compare_baskets:
+                p = all_results[bname]["portfolio"]
+                if not p.empty:
+                    view = p[["scheme_name", "amc", "sub_category", "allocation_pct",
+                              "composite_score", "trail_brokerage_incl_gst", "tieup_category"]].copy()
+                    view.insert(0, "Basket", bname)
+                    combined_rows.append(view)
+
+            if combined_rows:
+                combined_df = pd.concat(combined_rows, ignore_index=True)
+                combined_df = combined_df.rename(columns={
+                    "scheme_name": "Scheme", "amc": "AMC", "sub_category": "Sub-Category",
+                    "allocation_pct": "Alloc %", "composite_score": "Score",
+                    "trail_brokerage_incl_gst": "Brokerage%", "tieup_category": "TieUp",
+                })
+                st.dataframe(
+                    combined_df, use_container_width=True, height=520,
+                    column_config={
+                        "Alloc %":    st.column_config.NumberColumn(format="%d%%"),
+                        "Score":      st.column_config.NumberColumn(format="%.1f"),
+                        "Brokerage%": st.column_config.NumberColumn(format="%.2f%%"),
+                    },
+                )
+
+            # ── Comparison bar chart ─────────────────────────────────────
+            st.markdown('<div class="section-title">KPI Comparison</div>', unsafe_allow_html=True)
+            kpi_rows = []
+            for bname in compare_baskets:
+                s = all_stats.get(bname, {})
+                kpi_rows.append({
+                    "Basket": bname,
+                    "Wtd Brokerage %": s.get("weighted_avg_brok", 0),
+                    "Wtd 1Y Return %": s.get("weighted_avg_ret1y", 0),
+                    "Avg Score": s.get("avg_score", 0),
+                })
+            kpi_df = pd.DataFrame(kpi_rows)
+            kpi_melt = kpi_df.melt(id_vars="Basket", var_name="Metric", value_name="Value")
+            fig_kpi = px.bar(
+                kpi_melt, x="Value", y="Basket", color="Metric",
+                barmode="group", orientation="h",
+                color_discrete_sequence=["#3b82f6", "#10b981", "#f59e0b"],
+                height=max(250, 60 * len(compare_baskets)),
+            )
+            fig_kpi.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter"),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                xaxis=dict(title=""), yaxis=dict(title=""),
+                margin=dict(l=0, r=10, t=10, b=10),
+            )
+            st.plotly_chart(fig_kpi, use_container_width=True)
+

@@ -49,16 +49,34 @@ def extract_amc_from_scheme(scheme_name: str) -> str:
 
 
 def fuzzy_match_brokerage(perf_names: list, brok_names: list,
-                           brok_df: pd.DataFrame, threshold: int) -> dict:
+                           brok_df: pd.DataFrame, threshold: int,
+                           exclude_sub_categories: list = None) -> dict:
     """
     Returns a dict: perf_scheme_name → brokerage row (Series).
     Uses rapidfuzz's token_sort_ratio for partial name matching.
+    
+    Parameters:
+    - exclude_sub_categories: list of sub-category names that should NOT be fuzzy matched
+      (e.g., ["Contra Fund"]). These will not be matched and will return None.
     """
     # Pre-build lookup
     brok_index = {name: i for i, name in enumerate(brok_names)}
     mapping = {}
+    
+    # Build set of schemes to exclude from fuzzy matching
+    exclude_schemes = set()
+    if exclude_sub_categories:
+        perf_df_temp = pd.read_csv(PERF_FILE)
+        for sub_cat in exclude_sub_categories:
+            excluded = perf_df_temp[perf_df_temp["sub_category"] == sub_cat]["scheme_name"].tolist()
+            exclude_schemes.update(excluded)
+        print(f"  Excluding {len(exclude_schemes)} schemes from fuzzy matching (sub-categories: {exclude_sub_categories})")
 
     for pname in perf_names:
+        # Skip fuzzy matching for excluded sub-categories
+        if pname in exclude_schemes:
+            continue
+        
         result = process.extractOne(
             pname, brok_names,
             scorer=fuzz.token_sort_ratio,
@@ -86,7 +104,11 @@ def main():
     perf_names = perf["scheme_name"].tolist()
     brok_names = brok["scheme_name"].tolist()
 
-    match_map   = fuzzy_match_brokerage(perf_names, brok_names, brok, FUZZY_THRESHOLD)
+    # Sub-categories to exclude from fuzzy matching (no brokerage data available)
+    EXCLUDE_FROM_FUZZY = ["Contra Fund"]
+    
+    match_map   = fuzzy_match_brokerage(perf_names, brok_names, brok, FUZZY_THRESHOLD,
+                                        exclude_sub_categories=EXCLUDE_FROM_FUZZY)
     matched_cnt = len(match_map)
     print(f"  Matched: {matched_cnt} / {len(perf_names)} "
           f"({matched_cnt / len(perf_names) * 100:.1f}%)")
@@ -159,7 +181,7 @@ def main():
 
     os.makedirs(os.path.dirname(OUT_MASTER), exist_ok=True)
     perf.to_csv(OUT_MASTER, index=False)
-    print(f"\n✅ master_scheme_table.csv saved → {OUT_MASTER}")
+    print(f"\n[OK] master_scheme_table.csv saved -> {OUT_MASTER}")
     print(f"   Total rows: {len(perf)}")
     print(f"   Columns: {list(perf.columns)}")
 
@@ -169,7 +191,7 @@ def main():
         f.write(f"Unmatched schemes (no brokerage data found): {len(unmatched)}\n\n")
         for s in unmatched:
             f.write(f"  - {s}\n")
-    print(f"\n⚠  Unmatched schemes logged → {OUT_UNMATCH}  ({len(unmatched)} funds)")
+    print(f"\n[!] Unmatched schemes logged -> {OUT_UNMATCH}  ({len(unmatched)} funds)")
 
 
 if __name__ == "__main__":

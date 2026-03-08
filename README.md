@@ -31,10 +31,10 @@ pip install -r requirements.txt
 streamlit run src/dashboard/app.py
 ```
 
-## Deployment Options
+## Deployment
 
-### Option 1: Streamlit Community Cloud (Recommended - Free)
-1. Push your code to GitHub
+### Streamlit Community Cloud (Recommended)
+1. Push code to GitHub
 2. Go to https://share.streamlit.io
 3. Connect your GitHub repository
 4. Deploy for free!
@@ -43,19 +43,10 @@ streamlit run src/dashboard/app.py
 - Main file path: `src/dashboard/app.py`
 - Python version: 3.11
 
-### Option 2: Hugging Face Spaces (Free)
+### Hugging Face Spaces
 1. Go to https://huggingface.co/spaces
 2. Create a new Space (Streamlit)
 3. Push your code to the Space's repository
-
-### Option 3: Railway/Render/Heroku (Paid)
-These platforms support Streamlit natively:
-- **Railway**: https://railway.app
-- **Render**: https://render.com
-- **Heroku**: https://heroku.com
-
-### Option 4: Netlify (Limited)
-Netlify doesn't natively support Streamlit. Use Streamlit Cloud instead.
 
 ## Project Structure
 
@@ -63,14 +54,14 @@ Netlify doesn't natively support Streamlit. Use Streamlit Cloud instead.
 Grad Project/
 ├── src/
 │   ├── analysis/        # Analysis modules
-│   ├── dashboard/      # Streamlit dashboard
-│   ├── data/           # Data processing scripts
-│   └── scoring/        # Fund scoring engine
+│   ├── dashboard/       # Streamlit dashboard
+│   ├── data/            # Data processing scripts
+│   └── scoring/         # Fund scoring engine
 ├── data/
-│   └── processed/      # Processed data files
-├── requirements.txt    # Python dependencies
-├── README.md          # This file
-└── .streamlit/        # Streamlit configuration
+│   └── processed/       # Processed data files
+├── requirements.txt     # Python dependencies
+├── README.md            # This file
+└── .streamlit/          # Streamlit configuration
 ```
 
 ## License

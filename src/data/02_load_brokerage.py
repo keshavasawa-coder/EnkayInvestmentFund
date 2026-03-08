@@ -87,7 +87,7 @@ def main():
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     df.to_csv(OUT_PATH, index=False)
 
-    print(f"\n✅ scheme_brokerage.csv saved → {OUT_PATH}")
+    print(f"\n[OK] scheme_brokerage.csv saved -> {OUT_PATH}")
     print(f"   Unique schemes: {len(df)}")
     print(f"   AMCs covered:   {df['amc'].nunique()}")
     print(f"   Brokerage range (Incl. GST): "
