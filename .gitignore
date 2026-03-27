@@ -19,3 +19,15 @@ env/
 # Project specific data (if you don't want to upload raw data)
 # Note: ranked_funds.csv and master_scheme_table.csv ARE needed for the app.
 # Fund_Performance_*/ # Uncomment if you don't want to upload raw Excel files
+
+# Data files (sensitive)
+*.xls
+*.xlsx
+*.csv
+
+# Debug / backup files
+debug_*
+*_backup.py
+patch.diff
+nul
+trace_*.py

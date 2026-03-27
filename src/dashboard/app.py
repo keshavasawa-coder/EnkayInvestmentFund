@@ -55,6 +55,49 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+# ── Page config ──────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Enkay Investments – Fund Analytics",
+    page_icon="💸",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ── Authentication ───────────────────────────────────────────────────────────
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    st.markdown("""
+    <style>
+      .login-container {
+        max-width: 400px;
+        margin: 100px auto auto auto;
+        padding: 30px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        border: 1px solid #e2e8f0;
+      }
+      .login-header { text-align: center; margin-bottom: 24px; }
+      .login-header h2 { font-family: 'Inter', sans-serif; color: #1e293b; margin: 0; }
+      .login-header p { color: #64748b; font-size: 0.9rem; margin-top: 5px; }
+      body { background-color: #f8fafc; }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    st.markdown('<div class="login-header"><h2>💸 Enkay Investments</h2><p>Please log in to access the dashboard</p></div>', unsafe_allow_html=True)
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login", type="primary", use_container_width=True):
+        if username == "admin" and password == "EnkayInv123":
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Invalid username or password.")
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.stop()  # Stop rendering the rest of the app if not authenticated
 
 # ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -188,6 +231,11 @@ with st.sidebar:
 
     st.markdown("---")
     st.caption("Enkay Investments | Fund Analytics v1.0")
+    
+    # Logout button at bottom of sidebar
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.rerun()
 
 
 # ── Header ───────────────────────────────────────────────────────────────────
@@ -640,38 +688,128 @@ elif selected_page == "📋 Portfolio Exposure Review":
             flagged_display["Rank"] = flagged_display["Rank"].apply(lambda x: f"#{int(x)}" if pd.notna(x) else "—")
         
         st.dataframe(flagged_display, use_container_width=True, height=400)
-        
-        with st.expander("View Better Alternatives for Flagged Schemes", expanded=False):
-            alternatives = get_alternatives_for_flagged(flagged_df, active_df, risk_profile=risk_profile, n=3)
-            if not alternatives.empty:
-                alt_cols = {
-                    "flagged_scheme": "Current Scheme",
-                    "flagged_aum": "Current AUM",
-                    "flagged_score": "Current Score",
-                    "alternative_scheme": "Better Alternative",
-                    "alternative_score": "Alt Score",
-                    "alternative_brokerage": "Alt Brokerage%",
-                    "alternative_return_1y": "Alt 1Y Return%",
-                    "alternative_rank": "Alt Rank",
-                    "sub_category": "Category",
-                }
-                alt_show = [c for c in alt_cols.keys() if c in alternatives.columns]
-                alt_display = alternatives[alt_show].rename(columns=alt_cols).copy()
-                
-                if "Current AUM" in alt_display.columns:
-                    alt_display["Current AUM"] = alt_display["Current AUM"].apply(lambda x: f"₹{x:,.0f}")
-                if "Alt Score" in alt_display.columns:
-                    alt_display["Alt Score"] = alt_display["Alt Score"].apply(lambda x: f"{x:.1f}")
-                if "Alt Brokerage%" in alt_display.columns:
-                    alt_display["Alt Brokerage%"] = alt_display["Alt Brokerage%"].apply(lambda x: f"{x:.3f}%" if pd.notna(x) else "—")
-                if "Alt 1Y Return%" in alt_display.columns:
-                    alt_display["Alt 1Y Return%"] = alt_display["Alt 1Y Return%"].apply(lambda x: f"{x:.2f}%" if pd.notna(x) else "—")
-                if "Alt Rank" in alt_display.columns:
-                    alt_display["Alt Rank"] = alt_display["Alt Rank"].apply(lambda x: f"#{int(x)}" if pd.notna(x) else "—")
-                
-                st.dataframe(alt_display, use_container_width=True, height=400)
-            else:
-                st.info("No alternatives found for flagged schemes.")
+
+        st.markdown("### 🔍 Alternatives Analysis")
+        st.markdown("Click on each scheme to see detailed comparison with better alternatives.")
+
+        alternatives = get_alternatives_for_flagged(flagged_df, active_df, risk_profile=risk_profile, n=3)
+
+        if not alternatives.empty:
+            # Group alternatives by flagged scheme
+            for scheme_name, group in alternatives.groupby("flagged_scheme"):
+                flagged_info = flagged_df[flagged_df["scheme"] == scheme_name].iloc[0] if scheme_name in flagged_df["scheme"].values else None
+
+                with st.expander(f"📊 {scheme_name} - View Alternatives", expanded=False):
+                    # Current scheme info card
+                    st.markdown("#### Current Scheme")
+                    col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+                    with col1:
+                        score_val = flagged_info["composite_score"] if flagged_info is not None else group["flagged_score"].iloc[0]
+                        st.metric("Score", f"{score_val:.1f}" if pd.notna(score_val) else "—")
+                    with col2:
+                        brok_val = flagged_info["trail_brokerage_incl_gst"] if flagged_info is not None else group["flagged_brokerage"].iloc[0]
+                        st.metric("Brokerage", f"{brok_val:.3f}%" if pd.notna(brok_val) else "—")
+                    with col3:
+                        ret1 = flagged_info.get("return_1y_regular", "—") if flagged_info is not None else "—"
+                        st.metric("1Y Return", f"{ret1:.2f}%" if pd.notna(ret1) else "—")
+                    with col4:
+                        ret3 = flagged_info.get("return_3y_regular", "—") if flagged_info is not None else "—"
+                        st.metric("3Y Return", f"{ret3:.2f}%" if pd.notna(ret3) else "—")
+                    with col5:
+                        aum_val = flagged_info["total"] if flagged_info is not None else group["flagged_aum"].iloc[0]
+                        st.metric("AUM", f"₹{aum_val/10000000:.2f}Cr" if pd.notna(aum_val) else "—")
+                    with col6:
+                        tieup_val = flagged_info.get("tieup_category", "—") if flagged_info is not None else "—"
+                        st.metric("TieUp", str(tieup_val) if pd.notna(tieup_val) else "—")
+
+                    st.markdown("---")
+
+                    # Build comparison table
+                    st.markdown("#### Better Alternatives")
+
+                    comp_data = []
+                    for _, alt_row in group.iterrows():
+                        score_delta = alt_row["alternative_score"] - alt_row["flagged_score"]
+                        brok_delta = alt_row["alternative_brokerage"] - alt_row["flagged_brokerage"] if pd.notna(alt_row.get("alternative_brokerage")) and pd.notna(alt_row.get("flagged_brokerage")) else None
+
+                        comp_data.append({
+                            "Scheme": alt_row["alternative_scheme"],
+                            "Category": alt_row["sub_category"],
+                            "Score": alt_row["alternative_score"],
+                            "Score Δ": f"{'↑' if score_delta > 0 else '↓' if score_delta < 0 else '→'} {abs(score_delta):.1f}",
+                            "Brokerage %": alt_row.get("alternative_brokerage"),
+                            "Brok Δ": f"{'↑' if brok_delta and brok_delta > 0 else '↓' if brok_delta and brok_delta < 0 else '→'} {abs(brok_delta):.3f}%" if brok_delta is not None else "—",
+                            "1Y Ret %": alt_row.get("alternative_return_1y"),
+                            "3Y Ret %": alt_row.get("alternative_return_3y"),
+                            "5Y Ret %": alt_row.get("alternative_return_5y"),
+                            "AUM (Cr)": alt_row.get("alternative_aum"),
+                            "Rank": alt_row["alternative_rank"],
+                            "TieUp": alt_row.get("alternative_tieup", "—"),
+                        })
+
+                    if comp_data:
+                        comp_df = pd.DataFrame(comp_data)
+
+                        # Apply styling
+                        def highlight_improvements(val):
+                            if isinstance(val, str):
+                                if val.startswith("↑"):
+                                    return "background-color: #dcfce7; color: #166534"
+                                elif val.startswith("↓"):
+                                    return "background-color: #fee2e2; color: #991b1b"
+                            return ""
+
+                        def style_score(val):
+                            try:
+                                v = float(val)
+                                if v >= 70:
+                                    return "background-color: #dcfce7; color: #166534"
+                                elif v >= 50:
+                                    return "background-color: #fef9c3; color: #854d0e"
+                                else:
+                                    return "background-color: #fee2e2; color: #991b1b"
+                            except:
+                                return ""
+
+                        def style_brokerage(val):
+                            try:
+                                v = float(val)
+                                if v >= 0.8:
+                                    return "background-color: #dcfce7; color: #166534"
+                                elif v >= 0.5:
+                                    return "background-color: #fef9c3; color: #854d0e"
+                                else:
+                                    return "background-color: #fee2e2; color: #991b1b"
+                            except:
+                                return ""
+
+                        def format_df(df):
+                            fmt = df.copy()
+                            if "Score" in fmt.columns:
+                                fmt["Score"] = fmt["Score"].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "—")
+                            if "Brokerage %" in fmt.columns:
+                                fmt["Brokerage %"] = fmt["Brokerage %"].apply(lambda x: f"{x:.3f}%" if pd.notna(x) else "—")
+                            for col in ["1Y Ret %", "3Y Ret %", "5Y Ret %"]:
+                                if col in fmt.columns:
+                                    fmt[col] = fmt[col].apply(lambda x: f"{x:.2f}%" if pd.notna(x) else "—")
+                            if "AUM (Cr)" in fmt.columns:
+                                fmt["AUM (Cr)"] = fmt["AUM (Cr)"].apply(lambda x: f"₹{x:,.1f}" if pd.notna(x) else "—")
+                            if "Rank" in fmt.columns:
+                                fmt["Rank"] = fmt["Rank"].apply(lambda x: f"#{int(x)}" if pd.notna(x) else "—")
+                            return fmt
+
+                        formatted_df = format_df(comp_df)
+
+                        st.dataframe(
+                            formatted_df.style.applymap(highlight_improvements, subset=["Score Δ", "Brok Δ"]),
+                            use_container_width=True,
+                            height=300,
+                        )
+                    else:
+                        st.info("No alternatives found for this scheme.")
+        else:
+            st.info("No alternatives found for any flagged schemes.")
 
 
 # ═══════════════════════════════════════════════════════
@@ -1315,6 +1453,17 @@ elif selected_page == "📤 Upload AUM Data":
         "AUM data across the dashboard. After processing, the scoring pipeline will "
         "automatically re-run so all rankings reflect the new data."
     )
+    
+    with st.expander("ℹ️ How to download AUM data", expanded=True):
+        st.markdown("""
+        1. Visit **[AMFI Average AUM Data](https://www.amfiindia.com/aum-data/average-aum)**
+        2. **Select Scheme Data**: Schemewise
+        3. **Select Type**: Categorywise
+        4. **Select Mutual Fund**: All
+        5. **Select Financial Year**: *(Select the latest)*
+        6. **Select Period**: *(Select the latest)*
+        7. Download the Excel file and upload it below.
+        """)
 
     # ── Current AUM Status ────────────────────────────────────────────────
     AUM_CSV = os.path.join(BASE_DIR, "data", "processed", "scheme_aum.csv")
@@ -1464,6 +1613,27 @@ elif selected_page == "📊 Client Insights":
         "Upload your **Business Insight Report** and **Live SIP Report** to identify client gaps, "
         "revenue opportunities, and SIP trends."
     )
+    
+    with st.expander("ℹ️ How to download NJ Partner Desk Reports", expanded=True):
+        col_instr1, col_instr2 = st.columns(2)
+        with col_instr1:
+            st.markdown("""
+            **Business Insight Report:**
+            1. Go to **Investments -> Business Insight -> Business Insight Report**
+            2. Choose **Group Wise**
+            3. Choose **Report for Financial Year**
+            4. Go to **Columns** -> **Select & Add All Columns** (Click one, hold Shift+Down Arrow) -> Click **Apply**
+            5. Download the Excel (`.xls`)
+            """)
+        with col_instr2:
+            st.markdown("""
+            **Live SIP Report:**
+            1. Go to **Investments -> Business Insight -> Live SIP/STP/SWP Report**
+            2. Click **Detail**
+            3. SIP Frequency: **Monthly**
+            4. SIP Type: **ALL**
+            5. Click **Apply** -> Click **Export** -> Select **XLS** -> Click **Apply**
+            """)
 
     # ── File Upload ─────────────────────────────────────────────────────────
     up1, up2 = st.columns(2)
