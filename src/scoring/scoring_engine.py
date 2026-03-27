@@ -2,6 +2,7 @@
 scoring_engine.py
 Computes a Composite Score (0–100) for each fund in master_scheme_table.csv.
 Ranks funds within each sub-category for three risk profiles.
+Components: Return, Brokerage, AUM, Tie-up (alpha/info ratio removed).
 Outputs: data/processed/ranked_funds.csv
 """
 import os
@@ -16,27 +17,24 @@ OUT_PATH   = os.path.join(BASE_DIR, "data", "processed", "ranked_funds.csv")
 
 # ── Default component weights (must sum to 1.0) ─────────────────────────────
 # TieUp is FIXED at 5% for all profiles — the remaining 95% is split across
-# Return, Alpha, Brokerage, and AUM depending on the risk profile.
+# Return, Brokerage, and AUM depending on the risk profile.
 DEFAULT_WEIGHTS = {
     "conservative": {
-        "return":   0.40,  # Strong emphasis on track record
-        "alpha":    0.00,  # Not relevant for conservative
-        "brokerage":0.40,  # High brokerage focus
-        "aum":      0.15,  # AUM reliability
-        "tieup":    0.05,  # Fixed across all profiles
+        "return":   0.45,   # Strong emphasis on track record
+        "brokerage":0.35,   # High brokerage focus
+        "aum":      0.15,   # AUM reliability
+        "tieup":    0.05,   # Fixed across all profiles
     },
     "moderate": {
-        "return":   0.35,
-        "alpha":    0.10,
+        "return":   0.40,
         "brokerage":0.30,
-        "aum":      0.20,
+        "aum":      0.25,
         "tieup":    0.05,
     },
     "aggressive": {
-        "return":   0.40,
-        "alpha":    0.15,
-        "brokerage":0.20,
-        "aum":      0.20,
+        "return":   0.45,
+        "brokerage":0.25,
+        "aum":      0.25,
         "tieup":    0.05,
     },
 }
@@ -88,14 +86,6 @@ def compute_return_score(df: pd.DataFrame) -> pd.Series:
     return scores.apply(weighted_avg_row, axis=1)
 
 
-def compute_alpha_score(df: pd.DataFrame) -> pd.Series:
-    """1-Year Information Ratio (Regular), normalised within sub-category."""
-    col = "info_ratio_1y_regular"
-    if col in df.columns:
-        return minmax_scale_series(df[col])
-    return pd.Series(np.nan, index=df.index)
-
-
 def compute_brokerage_score(df: pd.DataFrame) -> pd.Series:
     """Trail brokerage rate normalised within sub-category."""
     col = "trail_brokerage_incl_gst"
@@ -122,7 +112,6 @@ def score_group(group: pd.DataFrame, weights: dict) -> pd.DataFrame:
     g = group.copy()
 
     g["_return_score"]    = compute_return_score(g)
-    g["_alpha_score"]     = compute_alpha_score(g)
     g["_brokerage_score"] = compute_brokerage_score(g)
     g["_tieup_score"]     = compute_tieup_score(g)
     g["_aum_score"]       = compute_aum_score(g)
@@ -130,7 +119,6 @@ def score_group(group: pd.DataFrame, weights: dict) -> pd.DataFrame:
     # Composite (all components already in [0,10] range)
     g["composite_score"] = (
         weights["return"]    * g["_return_score"].fillna(5) +
-        weights["alpha"]     * g["_alpha_score"].fillna(0) +
         weights["brokerage"] * g["_brokerage_score"].fillna(0) +
         weights["aum"]       * g["_aum_score"].fillna(5) +
         weights["tieup"]     * g["_tieup_score"]
@@ -141,12 +129,11 @@ def score_group(group: pd.DataFrame, weights: dict) -> pd.DataFrame:
 
     # Expose individual component scores for the dashboard
     g["score_return"]    = g["_return_score"].round(3)
-    g["score_alpha"]     = g["_alpha_score"].round(3)
     g["score_brokerage"] = g["_brokerage_score"].round(3)
     g["score_tieup"]     = g["_tieup_score"].round(3)
     g["score_aum"]       = g["_aum_score"].round(3)
 
-    g = g.drop(columns=["_return_score", "_alpha_score", "_brokerage_score",
+    g = g.drop(columns=["_return_score", "_brokerage_score",
                          "_tieup_score", "_aum_score"])
     return g
 

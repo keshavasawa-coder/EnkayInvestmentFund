@@ -25,10 +25,54 @@ AUM_THRESHOLDS = {
 }
 
 
-def load_aum_data():
-    """Load and clean the Scheme_wise_AUM.xls file."""
-    df = pd.read_excel(AUM_FILE, sheet_name="AUM Report", header=1)
+def load_aum_data(uploaded_file=None):
+    """
+    Load and clean the AUM data from file.
+    
+    Parameters:
+    -----------
+    uploaded_file : UploadedFile, optional
+        Streamlit uploaded file object. If None, loads from default Scheme_wise_AUM.xls
+    
+    Returns:
+    --------
+    DataFrame with columns: sr_no, amc, scheme, nav, equity, debt, hybrid, physical_assets, others, total
+    """
+    import io
+    
+    if uploaded_file is not None:
+        # Read uploaded file - auto-detect sheet name
+        file_bytes = uploaded_file.read()
+        
+        # Try to find the AUM sheet
+        xl = pd.ExcelFile(io.BytesIO(file_bytes))
+        
+        # Try common sheet names
+        sheet_names_to_try = ["AUM Report", "AUM", "Sheet1", "Sheet0", xl.sheet_names[0]]
+        df = None
+        
+        for sheet_name in sheet_names_to_try:
+            try:
+                # Try reading with header=1 (like the default)
+                temp_df = pd.read_excel(io.BytesIO(file_bytes), sheet_name=sheet_name, header=1)
+                # Check if it has the expected columns
+                if any('scheme' in str(c).lower() for c in temp_df.columns):
+                    df = temp_df
+                    break
+            except:
+                continue
+        
+        if df is None:
+            # Last resort: try without specifying header
+            df = pd.read_excel(io.BytesIO(file_bytes), sheet_name=0)
+    else:
+        # Load from default file
+        df = pd.read_excel(AUM_FILE, sheet_name="AUM Report", header=1)
+    
+    # Standardize column names
     df.columns = ["sr_no", "amc", "scheme", "nav", "equity", "debt", "hybrid", "physical_assets", "others", "total"]
+    
+    # Clean data
     df = df.dropna(subset=["scheme"])
     df["scheme"] = df["scheme"].astype(str).str.strip()
     df["amc"] = df["amc"].astype(str).str.strip()
@@ -36,6 +80,7 @@ def load_aum_data():
     df["equity"] = pd.to_numeric(df["equity"], errors="coerce").fillna(0)
     df["debt"] = pd.to_numeric(df["debt"], errors="coerce").fillna(0)
     df["hybrid"] = pd.to_numeric(df["hybrid"], errors="coerce").fillna(0)
+    
     return df
 
 
@@ -124,8 +169,8 @@ def flag_underperforming_schemes(
     
     merged = aum_matched.merge(
         ranked[["scheme_name", "composite_score", "score_return", "score_brokerage", 
-                "score_aum", "trail_brokerage_incl_gst", "return_1y_regular", 
-                "return_3y_regular", "rank", "sub_category", "category"]],
+                "score_aum", "trail_brokerage_incl_gst", "nav_regular", "return_1y_regular", 
+                "return_3y_regular", "return_5y_regular", "rank", "sub_category", "category"]],
         left_on="matched_scheme",
         right_on="scheme_name",
         how="left",

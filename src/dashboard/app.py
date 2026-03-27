@@ -37,6 +37,16 @@ from analysis.portfolio_review    import (
     AUM_THRESHOLDS,
 )
 from analysis.portfolio_builder   import build_portfolio, get_portfolio_stats, PORTFOLIO_BASKETS, BASKET_NAMES
+import importlib as _importlib
+_load_aum_mod = _importlib.import_module("data.03_load_aum")
+parse_aum_excel = _load_aum_mod.parse_aum_excel  # reuse existing AUM parser
+from analysis.sip_insights import (
+    load_business_insights, load_live_sip, standardize_columns,
+    standardize_sip_columns, merge_client_data, identify_gaps,
+    calculate_pareto, get_summary_metrics, get_client_list_for_gap,
+    calculate_sip_lumpsum_ratio, calculate_revenue_potential,
+    AUM_THRESHOLDS as SIP_AUM_THRESHOLDS,
+)
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -149,6 +159,8 @@ PAGES = [
     "🏦 AMC Concentration",
     "📊 Brokerage vs Performance",
     "📦 Recommended Portfolios",
+    "📤 Upload AUM Data",
+    "📊 Client Insights",
 ]
 
 with st.sidebar:
@@ -258,26 +270,29 @@ with st.expander("⚖️ Score Weights", expanded=False):
                      custom_weights["tieup"])
     active_df = apply_custom_weights(weights_tuple, risk_profile)
 
-# ── Top KPI row ───────────────────────────────────────────────────────────────
-col1, col2, col3, col4, col5 = st.columns(5)
+# ── Top KPI row (hidden on Client Insights page) ─────────────────────────────
+if selected_page != "📊 Client Insights":
+    col1, col2, col3, col4, col5 = st.columns(5)
+    profile_df = active_df.copy()
+
+    with col1:
+        st.markdown(f'<div class="metric-card"><div class="value">{len(profile_df):,}</div><div class="label">Total Funds</div></div>', unsafe_allow_html=True)
+    with col2:
+        brok_matched = profile_df["trail_brokerage_incl_gst"].notna().sum()
+        st.markdown(f'<div class="metric-card"><div class="value">{brok_matched:,}</div><div class="label">With Brokerage Data</div></div>', unsafe_allow_html=True)
+    with col3:
+        tieup_a = (profile_df["tieup_category"] == "A").sum()
+        st.markdown(f'<div class="metric-card"><div class="value">{tieup_a}</div><div class="label">A-TieUp Funds</div></div>', unsafe_allow_html=True)
+    with col4:
+        avg_brok = profile_df["trail_brokerage_incl_gst"].mean()
+        st.markdown(f'<div class="metric-card"><div class="value">{avg_brok:.2f}%</div><div class="label">Avg Brokerage</div></div>', unsafe_allow_html=True)
+    with col5:
+        cats = profile_df["sub_category"].nunique()
+        st.markdown(f'<div class="metric-card"><div class="value">{cats}</div><div class="label">Sub-Categories</div></div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
 profile_df = active_df.copy()
-
-with col1:
-    st.markdown(f'<div class="metric-card"><div class="value">{len(profile_df):,}</div><div class="label">Total Funds</div></div>', unsafe_allow_html=True)
-with col2:
-    brok_matched = profile_df["trail_brokerage_incl_gst"].notna().sum()
-    st.markdown(f'<div class="metric-card"><div class="value">{brok_matched:,}</div><div class="label">With Brokerage Data</div></div>', unsafe_allow_html=True)
-with col3:
-    tieup_a = (profile_df["tieup_category"] == "A").sum()
-    st.markdown(f'<div class="metric-card"><div class="value">{tieup_a}</div><div class="label">A-TieUp Funds</div></div>', unsafe_allow_html=True)
-with col4:
-    avg_brok = profile_df["trail_brokerage_incl_gst"].mean()
-    st.markdown(f'<div class="metric-card"><div class="value">{avg_brok:.2f}%</div><div class="label">Avg Brokerage</div></div>', unsafe_allow_html=True)
-with col5:
-    cats = profile_df["sub_category"].nunique()
-    st.markdown(f'<div class="metric-card"><div class="value">{cats}</div><div class="label">Sub-Categories</div></div>', unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
 
 # ── Main Content Based on Selected Page ─────────────────────────────────────
 
@@ -1290,3 +1305,421 @@ and scoring weights from the sidebar. An **AMC concentration cap** ensures diver
             )
             st.plotly_chart(fig_kpi, use_container_width=True)
 
+# ═══════════════════════════════════════════════════════════
+# PAGE 8 — UPLOAD AUM DATA
+# ═══════════════════════════════════════════════════════════
+elif selected_page == "📤 Upload AUM Data":
+    st.markdown('<div class="section-title">Upload & Update AUM Data</div>', unsafe_allow_html=True)
+    st.markdown(
+        "Upload the latest **AMFI Average AUM Excel file** (`average-aum.xlsx`) to refresh "
+        "AUM data across the dashboard. After processing, the scoring pipeline will "
+        "automatically re-run so all rankings reflect the new data."
+    )
+
+    # ── Current AUM Status ────────────────────────────────────────────────
+    AUM_CSV = os.path.join(BASE_DIR, "data", "processed", "scheme_aum.csv")
+    st.markdown("### 📋 Current AUM Data Status")
+
+    if os.path.exists(AUM_CSV):
+        import datetime
+        aum_stat = os.stat(AUM_CSV)
+        aum_mod_time = datetime.datetime.fromtimestamp(aum_stat.st_mtime)
+        existing_aum = pd.read_csv(AUM_CSV)
+
+        s1, s2, s3, s4 = st.columns(4)
+        with s1:
+            st.markdown(
+                f'<div class="metric-card"><div class="value" style="font-size:1.2rem">{aum_mod_time.strftime("%d %b %Y, %H:%M")}</div>'
+                f'<div class="label">Last Updated</div></div>',
+                unsafe_allow_html=True,
+            )
+        with s2:
+            st.markdown(
+                f'<div class="metric-card"><div class="value">{len(existing_aum):,}</div>'
+                f'<div class="label">Total Funds</div></div>',
+                unsafe_allow_html=True,
+            )
+        with s3:
+            st.markdown(
+                f'<div class="metric-card"><div class="value">{existing_aum["aum_cr"].min():.1f} – {existing_aum["aum_cr"].max():,.0f} Cr</div>'
+                f'<div class="label">AUM Range</div></div>',
+                unsafe_allow_html=True,
+            )
+        with s4:
+            st.markdown(
+                f'<div class="metric-card"><div class="value">{existing_aum["aum_cr"].median():,.1f} Cr</div>'
+                f'<div class="label">Median AUM</div></div>',
+                unsafe_allow_html=True,
+            )
+    else:
+        st.warning("⚠️ No AUM data found. Upload an `average-aum.xlsx` file below to get started.")
+
+    st.markdown("---")
+
+    # ── File Uploader ─────────────────────────────────────────────────────
+    st.markdown("### 📤 Upload New AUM File")
+    uploaded_file = st.file_uploader(
+        "Select the AMFI Average AUM Excel file (.xlsx)",
+        type=["xlsx"],
+        accept_multiple_files=False,
+        key="aum_uploader",
+        help="Download the latest quarterly Average AUM file from the AMFI website and upload it here.",
+    )
+
+    if uploaded_file is not None:
+        st.success(f"✅ File selected: **{uploaded_file.name}** ({uploaded_file.size / 1024:.1f} KB)")
+
+        if st.button("🚀 Process & Update", type="primary", use_container_width=True):
+            progress = st.progress(0, text="Starting AUM update pipeline…")
+
+            try:
+                # Step 1: Save uploaded file
+                progress.progress(10, text="💾 Saving uploaded file…")
+                upload_dest = os.path.join(BASE_DIR, "average-aum.xlsx")
+                with open(upload_dest, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+
+                # Step 2: Parse AUM Excel
+                progress.progress(30, text="📊 Parsing AUM data…")
+                aum_df = parse_aum_excel(upload_dest)
+
+                # Step 3: Save parsed AUM CSV
+                progress.progress(50, text="💾 Saving scheme_aum.csv…")
+                aum_out = os.path.join(BASE_DIR, "data", "processed", "scheme_aum.csv")
+                os.makedirs(os.path.dirname(aum_out), exist_ok=True)
+                aum_df.to_csv(aum_out, index=False)
+
+                # Step 4: Re-merge master table
+                progress.progress(65, text="🔄 Re-merging master table…")
+                merge_mod = _importlib.import_module("data.04_merge_master")
+                merge_mod.main()
+
+                # Step 5: Re-score and re-rank
+                progress.progress(80, text="🏆 Re-scoring and re-ranking…")
+                scoring_mod = _importlib.import_module("scoring.scoring_engine")
+                scoring_mod.main()
+
+                # Step 6: Clear cache
+                progress.progress(95, text="🧹 Clearing cache…")
+                st.cache_data.clear()
+
+                progress.progress(100, text="✅ Pipeline complete!")
+                st.balloons()
+
+                # ── Show results ──────────────────────────────────────────
+                st.markdown("### ✅ Update Successful")
+                r1, r2, r3 = st.columns(3)
+                with r1:
+                    st.markdown(
+                        f'<div class="metric-card" style="border-left:4px solid #10b981">'
+                        f'<div class="value" style="color:#10b981">{len(aum_df):,}</div>'
+                        f'<div class="label">Funds Parsed</div></div>',
+                        unsafe_allow_html=True,
+                    )
+                with r2:
+                    st.markdown(
+                        f'<div class="metric-card" style="border-left:4px solid #3b82f6">'
+                        f'<div class="value" style="color:#3b82f6">{aum_df["aum_cr"].min():.1f} – {aum_df["aum_cr"].max():,.0f} Cr</div>'
+                        f'<div class="label">AUM Range</div></div>',
+                        unsafe_allow_html=True,
+                    )
+                with r3:
+                    st.markdown(
+                        f'<div class="metric-card" style="border-left:4px solid #f59e0b">'
+                        f'<div class="value" style="color:#f59e0b">{aum_df["aum_cr"].median():,.1f} Cr</div>'
+                        f'<div class="label">Median AUM</div></div>',
+                        unsafe_allow_html=True,
+                    )
+
+                # Preview table
+                st.markdown("### 📊 Parsed AUM Data Preview")
+                st.dataframe(
+                    aum_df.rename(columns={
+                        "scheme_code": "Scheme Code",
+                        "scheme_name": "Scheme Name",
+                        "aum_cr": "AUM (Cr)",
+                    }),
+                    use_container_width=True,
+                    height=400,
+                    column_config={
+                        "AUM (Cr)": st.column_config.NumberColumn(format="%,.2f"),
+                    },
+                )
+
+                st.info("ℹ️ Refresh the page or navigate to **Fund Ranker** to see the updated rankings.")
+
+            except Exception as e:
+                progress.progress(100, text="❌ Error occurred")
+                st.error(f"❌ Pipeline failed: {e}")
+                st.exception(e)
+    else:
+        st.info("👆 Select an `.xlsx` file above to begin.")
+
+# ═══════════════════════════════════════════════════════════
+# PAGE 9 – CLIENT INSIGHTS
+# ═══════════════════════════════════════════════════════════
+elif selected_page == "📊 Client Insights":
+    st.markdown('<div class="section-title">Client Insights – Gap Analysis & SIP Summary</div>', unsafe_allow_html=True)
+    st.markdown(
+        "Upload your **Business Insight Report** and **Live SIP Report** to identify client gaps, "
+        "revenue opportunities, and SIP trends."
+    )
+
+    # ── File Upload ─────────────────────────────────────────────────────────
+    up1, up2 = st.columns(2)
+    with up1:
+        biz_file = st.file_uploader(
+            "📂 Business Insight Report (.xls/.xlsx)",
+            type=["xls", "xlsx"],
+            key="ci_biz_upload",
+        )
+    with up2:
+        sip_file = st.file_uploader(
+            "📂 Live SIP Report (.xls/.xlsx)",
+            type=["xls", "xlsx"],
+            key="ci_sip_upload",
+        )
+
+    btn1, btn2, _ = st.columns([1, 1, 4])
+    with btn1:
+        process_btn = st.button("⚙️ Process Data", use_container_width=True, type="primary")
+    with btn2:
+        clear_btn = st.button("🗑️ Clear Cache", use_container_width=True)
+
+    # ── Clear Cache ─────────────────────────────────────────────────────────
+    if clear_btn:
+        for key in ["ci_business_df", "ci_sip_df", "ci_gaps", "ci_metrics", "ci_pareto"]:
+            st.session_state.pop(key, None)
+        st.rerun()
+
+    # ── Process Data (save to session_state to survive reruns) ──────────────
+    if process_btn and biz_file is not None:
+        with st.spinner("Processing reports…"):
+            business_df = load_business_insights(biz_file)
+            if business_df is not None:
+                business_df = standardize_columns(business_df)
+
+                sip_df = None
+                if sip_file is not None:
+                    sip_df = load_live_sip(sip_file)
+                    if sip_df is not None:
+                        sip_df = standardize_sip_columns(sip_df)
+
+                business_df = merge_client_data(business_df, sip_df)
+                business_df = calculate_sip_lumpsum_ratio(business_df)
+                business_df = calculate_revenue_potential(business_df)
+
+                gaps = identify_gaps(business_df)
+                metrics = get_summary_metrics(business_df, gaps)
+                pareto = calculate_pareto(business_df)
+
+                # Persist in session state
+                st.session_state["ci_business_df"] = business_df
+                st.session_state["ci_sip_df"] = sip_df
+                st.session_state["ci_gaps"] = gaps
+                st.session_state["ci_metrics"] = metrics
+                st.session_state["ci_pareto"] = pareto
+            else:
+                st.error("Could not parse the Business Insight Report. Please check the file format.")
+
+    # ── Render analysis if data is in session state ─────────────────────
+    if st.session_state.get("ci_business_df") is not None:
+        ci_df = st.session_state["ci_business_df"]
+        ci_sip = st.session_state.get("ci_sip_df")
+        ci_gaps = st.session_state["ci_gaps"]
+        ci_metrics = st.session_state["ci_metrics"]
+        ci_pareto = st.session_state["ci_pareto"]
+
+        st.divider()
+
+        # ── Summary KPI Cards ───────────────────────────────────────────────
+        kc1, kc2, kc3, kc4 = st.columns(4)
+        with kc1:
+            aum_cr = ci_metrics['total_aum'] / 10000000
+            st.markdown(f'<div class="metric-card"><div class="value">₹{aum_cr:.2f} Cr</div><div class="label">Total AUM</div></div>', unsafe_allow_html=True)
+        with kc2:
+            st.markdown(f'<div class="metric-card"><div class="value">{ci_metrics["total_clients"]:,}</div><div class="label">Total Clients</div></div>', unsafe_allow_html=True)
+        with kc3:
+            sip_lakh = ci_metrics['live_sip_amount'] / 100000
+            st.markdown(f'<div class="metric-card"><div class="value">₹{sip_lakh:.1f}L</div><div class="label">Live SIP Amount</div></div>', unsafe_allow_html=True)
+        with kc4:
+            rev_cr = ci_metrics['est_annual_revenue'] / 10000000
+            st.markdown(f'<div class="metric-card"><div class="value">₹{rev_cr:.2f} Cr</div><div class="label">Est. Annual Revenue</div></div>', unsafe_allow_html=True)
+
+        # ── Gap Analysis Section ────────────────────────────────────────────
+        st.markdown('<div class="section-title">Gap Analysis</div>', unsafe_allow_html=True)
+
+        gap_options = {
+            'high_aum_no_sip':  f"🟠 High AUM, No SIP ({ci_metrics['high_aum_no_sip_count']})",
+            'reduced_sip':      f"🟡 Reduced SIP ({ci_metrics['reduced_sip_count']})",
+            'no_topup':         f"🔵 No Top-Up SIP ({ci_metrics['no_topup_count']})",
+            'sip_terminated':   f"🔴 SIP Terminated ({ci_metrics['sip_terminated_count']})",
+            'below_benchmark':  f"⚠️ Below Benchmark (<1.5% AUM) ({ci_metrics['below_benchmark_count']})",
+        }
+
+        gc1, gc2, gc3, gc4, gc5 = st.columns(5)
+        with gc1:
+            color_ha = "#ef4444" if ci_metrics['high_aum_no_sip_count'] > 0 else "#10b981"
+            st.markdown(f'<div class="metric-card" style="border-color:{color_ha}"><div class="value" style="color:{color_ha}">{ci_metrics["high_aum_no_sip_count"]}</div><div class="label">High AUM, No SIP</div></div>', unsafe_allow_html=True)
+        with gc2:
+            color_rs = "#f59e0b" if ci_metrics['reduced_sip_count'] > 0 else "#10b981"
+            st.markdown(f'<div class="metric-card" style="border-color:{color_rs}"><div class="value" style="color:{color_rs}">{ci_metrics["reduced_sip_count"]}</div><div class="label">Reduced SIP</div></div>', unsafe_allow_html=True)
+        with gc3:
+            st.markdown(f'<div class="metric-card"><div class="value" style="color:#3b82f6">{ci_metrics["no_topup_count"]}</div><div class="label">No Top-Up</div></div>', unsafe_allow_html=True)
+        with gc4:
+            color_st = "#ef4444" if ci_metrics['sip_terminated_count'] > 0 else "#10b981"
+            st.markdown(f'<div class="metric-card" style="border-color:{color_st}"><div class="value" style="color:{color_st}">{ci_metrics["sip_terminated_count"]}</div><div class="label">SIP Terminated</div></div>', unsafe_allow_html=True)
+        with gc5:
+            color_bb = "#f59e0b" if ci_metrics['below_benchmark_count'] > 0 else "#10b981"
+            st.markdown(f'<div class="metric-card" style="border-color:{color_bb}"><div class="value" style="color:{color_bb}">{ci_metrics["below_benchmark_count"]}</div><div class="label">Below Benchmark<br>(&lt;1.5% AUM)</div></div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        selected_gap = st.selectbox(
+            "Select Gap Type",
+            list(gap_options.keys()),
+            format_func=lambda k: gap_options[k],
+            key="ci_gap_select",
+        )
+
+        client_list = get_client_list_for_gap(selected_gap, ci_gaps, ci_df)
+        if not client_list.empty:
+            rename_map = {
+                'Group': 'Client',
+                'Total_MF_AUM_Lakh': 'AUM (₹ Lakh)',
+                'Live_SIP_Amount_K': 'SIP Amt (₹K)',
+                'Mobile_Display': 'Mobile',
+                'Email': 'Email',
+                'TopUp_SIP_Amount': 'TopUp Amt',
+                'SIP_Change_2Yrs': 'SIP Δ 2Y',
+            }
+            show_cols = [c for c in rename_map if c in client_list.columns]
+            display_df = client_list[show_cols].rename(columns=rename_map)
+            st.dataframe(display_df, use_container_width=True, height=400)
+            st.caption(f"Showing {len(display_df)} clients for: {gap_options[selected_gap]}")
+        else:
+            st.success("✅ No clients found for this gap type.")
+
+        # ── Pareto Chart (client names on x-axis) ─────────────────────────
+        if ci_pareto:
+            st.markdown('<div class="section-title">Pareto Analysis – AUM Concentration</div>', unsafe_allow_html=True)
+
+            pc1, pc2, pc3 = st.columns(3)
+            with pc1:
+                st.metric("Total Clients", f"{ci_pareto['total_clients']:,}")
+            with pc2:
+                st.metric("Top 20% Clients", f"{ci_pareto['top_20_pct_clients']:,}")
+            with pc3:
+                st.metric("Top 20% AUM Share", f"{ci_pareto['top_20_aum_pct']:.1f}%")
+
+            pareto_data = ci_pareto['full_data'].head(50).copy()
+            fig_pareto = go.Figure()
+            fig_pareto.add_trace(go.Bar(
+                x=pareto_data['Group'],
+                y=pareto_data['Total_MF_AUM'] / 100000,
+                name='AUM (₹ Lakh)',
+                marker_color='#3b82f6',
+                hovertemplate='<b>%{x}</b><br>AUM: ₹%{y:,.0f} Lakh<extra></extra>',
+            ))
+            fig_pareto.add_trace(go.Scatter(
+                x=pareto_data['Group'],
+                y=pareto_data['cum_pct'] * 100,
+                name='Cumulative %',
+                yaxis='y2',
+                line=dict(color='#ef4444', width=2.5),
+                marker=dict(size=5),
+                hovertemplate='%{x}<br>Cum: %{y:.1f}%<extra></extra>',
+            ))
+            fig_pareto.update_layout(
+                yaxis=dict(title='AUM (₹ Lakh)', showgrid=True, gridcolor='#e2e8f0'),
+                yaxis2=dict(title='Cumulative %', overlaying='y', side='right', range=[0, 105]),
+                xaxis=dict(title='', tickangle=-45, tickfont=dict(size=9)),
+                height=450,
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='#ffffff',
+                font=dict(family='Inter'),
+                legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                margin=dict(l=0, r=50, t=10, b=120),
+                hovermode='x unified',
+            )
+            st.plotly_chart(fig_pareto, use_container_width=True)
+
+        # ── SIP Summary Section ─────────────────────────────────────────────
+        if ci_sip is not None and not ci_sip.empty:
+            st.markdown('<div class="section-title">SIP Summary</div>', unsafe_allow_html=True)
+
+            sip_work = ci_sip.copy()
+
+            # -- Scheme Count per Client --
+            if 'Group' in sip_work.columns and 'Scheme' in sip_work.columns:
+                scheme_per_client = sip_work.groupby('Group')['Scheme'].nunique().reset_index()
+                scheme_per_client.columns = ['Client', 'Scheme Count']
+                scheme_per_client = scheme_per_client.sort_values('Scheme Count', ascending=False)
+
+                sip_c1, sip_c2 = st.columns(2)
+                with sip_c1:
+                    st.markdown("##### Scheme Count per Client (Top 20)")
+                    fig_scheme = px.bar(
+                        scheme_per_client.head(20),
+                        x='Client', y='Scheme Count',
+                        color='Scheme Count',
+                        color_continuous_scale=['#93c5fd', '#3b82f6', '#1e40af'],
+                        text='Scheme Count',
+                    )
+                    fig_scheme.update_traces(textposition='outside', textfont_size=10)
+                    fig_scheme.update_layout(
+                        height=350, showlegend=False, coloraxis_showscale=False,
+                        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(family='Inter'),
+                        xaxis=dict(tickangle=-45, tickfont=dict(size=9)),
+                        margin=dict(l=0, r=10, t=10, b=100),
+                    )
+                    st.plotly_chart(fig_scheme, use_container_width=True)
+
+                # -- Frequency Distribution --
+                with sip_c2:
+                    if 'Frequency' in sip_work.columns:
+                        st.markdown("##### SIP Frequency Distribution")
+                        freq_dist = sip_work['Frequency'].value_counts().reset_index()
+                        freq_dist.columns = ['Frequency', 'Count']
+                        fig_freq = px.pie(
+                            freq_dist, values='Count', names='Frequency',
+                            hole=0.4, color_discrete_sequence=px.colors.qualitative.Set2,
+                        )
+                        fig_freq.update_traces(textposition='inside', textinfo='percent+label', textfont_size=11)
+                        fig_freq.update_layout(
+                            height=350, showlegend=False,
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            font=dict(family='Inter'),
+                            margin=dict(l=0, r=0, t=10, b=10),
+                        )
+                        st.plotly_chart(fig_freq, use_container_width=True)
+                    else:
+                        st.info("Frequency column not found in the SIP report.")
+
+            # -- Top Schemes by SIP Volume --
+            if 'Scheme' in sip_work.columns and 'Monthly_SIP_Amount' in sip_work.columns:
+                st.markdown("##### Top 15 Schemes by SIP Volume")
+                sip_work['Monthly_SIP_Amount'] = pd.to_numeric(sip_work['Monthly_SIP_Amount'], errors='coerce').fillna(0)
+                top_schemes = sip_work.groupby('Scheme')['Monthly_SIP_Amount'].sum().nlargest(15).reset_index()
+                top_schemes.columns = ['Scheme', 'Total Monthly SIP (₹)']
+                fig_top = px.bar(
+                    top_schemes,
+                    x='Total Monthly SIP (₹)', y='Scheme',
+                    orientation='h',
+                    color='Total Monthly SIP (₹)',
+                    color_continuous_scale=['#93c5fd', '#3b82f6', '#1e40af'],
+                    text=top_schemes['Total Monthly SIP (₹)'].apply(lambda v: f'₹{v/1000:,.0f}K'),
+                )
+                fig_top.update_traces(textposition='outside', textfont_size=10)
+                fig_top.update_layout(
+                    height=450, showlegend=False, coloraxis_showscale=False,
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family='Inter'),
+                    xaxis=dict(title='', showticklabels=False),
+                    yaxis=dict(title='', tickfont=dict(size=10)),
+                    margin=dict(l=0, r=60, t=10, b=10),
+                )
+                st.plotly_chart(fig_top, use_container_width=True)
+
+    else:
+        st.info("👆 Upload your reports and click **Process Data** to begin analysis.")

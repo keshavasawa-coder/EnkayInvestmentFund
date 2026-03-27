@@ -11,10 +11,9 @@ RANKED_FILE = os.path.join(BASE_DIR, "data", "processed", "ranked_funds.csv")
 
 DISPLAY_COLS = [
     "scheme_name", "sub_category", "tieup_category",
-    "return_1y_regular", "return_3y_regular", "return_5y_regular",
-    "info_ratio_1y_regular",
+    "nav_regular", "return_1y_regular", "return_3y_regular", "return_5y_regular",
     "trail_brokerage_incl_gst", "aum_cr",
-    "score_return", "score_alpha", "score_brokerage", "score_tieup",
+    "score_return", "score_brokerage", "score_aum", "score_tieup",
     "composite_score", "rank",
 ]
 

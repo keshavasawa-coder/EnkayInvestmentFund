@@ -1,11 +1,9 @@
-Unmatched schemes (no brokerage data found): 272
+Unmatched schemes (no brokerage data found): 270
 
   - JioBlackRock Flexi Cap Fund
   - Taurus Mid Cap Fund
   - UTI Master Equity Plan Unit Scheme
-  - Invesco India Contra Fund
   - Kotak Contra Fund
-  - SBI Contra Fund
   - Bandhan Multi-Factor Fund
   - Franklin India Multi-Factor Fund
   - SBI COMMA Fund

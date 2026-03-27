@@ -5,3 +5,4 @@ rapidfuzz>=3.0
 streamlit>=1.35
 plotly>=5.20
 scikit-learn>=1.4
+requests>=2.31
