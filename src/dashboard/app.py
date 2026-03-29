@@ -66,6 +66,7 @@ st.set_page_config(
 # ── Authentication ───────────────────────────────────────────────────────────
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
+    st.session_state["user_role"] = None
 
 if not st.session_state["authenticated"]:
     st.markdown("""
@@ -93,6 +94,11 @@ if not st.session_state["authenticated"]:
     if st.button("Login", type="primary", use_container_width=True):
         if username == "admin" and password == "EnkayInv123":
             st.session_state["authenticated"] = True
+            st.session_state["user_role"] = "admin"
+            st.rerun()
+        elif username == "guest" and password == "Enkay123":
+            st.session_state["authenticated"] = True
+            st.session_state["user_role"] = "guest"
             st.rerun()
         else:
             st.error("Invalid username or password.")
@@ -194,7 +200,7 @@ PROFILE_DEFAULTS = {
     "aggressive":   {"w_return": 40, "w_alpha": 15, "w_brokerage": 20, "w_aum": 20},
 }
 
-PAGES = [
+ALL_PAGES = [
     "🏆 Fund Ranker",
     "🔍 Peer Comparison",
     "📋 Portfolio Exposure Review",
@@ -205,6 +211,13 @@ PAGES = [
     "📤 Upload AUM Data",
     "📊 Client Insights",
 ]
+
+# Filter pages based on user role
+user_role = st.session_state.get("user_role", "guest")
+if user_role == "guest":
+    PAGES = [p for p in ALL_PAGES if p != "📊 Client Insights"]
+else:
+    PAGES = ALL_PAGES
 
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/investment-portfolio.png", width=60)
@@ -230,11 +243,13 @@ with st.sidebar:
         st.session_state["_last_profile"] = risk_profile
 
     st.markdown("---")
+    st.caption(f"Logged in as: **{user_role.capitalize()}**")
     st.caption("Enkay Investments | Fund Analytics v1.0")
     
     # Logout button at bottom of sidebar
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state["authenticated"] = False
+        st.session_state["user_role"] = None
         st.rerun()
 
 
