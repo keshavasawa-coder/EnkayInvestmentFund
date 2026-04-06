@@ -47,6 +47,8 @@ from analysis.sip_insights import (
     calculate_sip_lumpsum_ratio, calculate_revenue_potential,
     AUM_THRESHOLDS as SIP_AUM_THRESHOLDS,
 )
+from analysis.query_parser import parse_query
+from analysis.query_executor import execute_query
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -208,6 +210,7 @@ ALL_PAGES = [
     "🏦 AMC Concentration",
     "📊 Brokerage vs Performance",
     "📦 Recommended Portfolios",
+    "💬 Q&A Assistant",
     "📤 Upload AUM Data",
     "📊 Client Insights",
 ]
@@ -333,8 +336,8 @@ with st.expander("⚖️ Score Weights", expanded=False):
                      custom_weights["tieup"])
     active_df = apply_custom_weights(weights_tuple, risk_profile)
 
-# ── Top KPI row (hidden on Client Insights page) ─────────────────────────────
-if selected_page != "📊 Client Insights":
+# ── Top KPI row (hidden on Client Insights and Q&A pages) ─────────────────────
+if selected_page not in ["📊 Client Insights", "💬 Q&A Assistant"]:
     col1, col2, col3, col4, col5 = st.columns(5)
     profile_df = active_df.copy()
 
@@ -1457,6 +1460,111 @@ and scoring weights from the sidebar. An **AMC concentration cap** ensures diver
                 margin=dict(l=0, r=10, t=10, b=10),
             )
             st.plotly_chart(fig_kpi, use_container_width=True)
+
+# ═══════════════════════════════════════════════════════════
+# PAGE 8 — Q&A ASSISTANT (RULE-BASED)
+# ═══════════════════════════════════════════════════════════
+elif selected_page == "💬 Q&A Assistant":
+    st.markdown('<div class="section-title">Rule-Based Q&A Assistant</div>', unsafe_allow_html=True)
+    st.markdown(
+        "Ask natural-language questions about funds and clients. "
+        "This assistant is deterministic and keyword/rule based (no AI API)."
+    )
+
+    if "qa_history" not in st.session_state:
+        st.session_state["qa_history"] = []
+
+    st.markdown("### Quick Suggestions")
+    top_scheme = active_df.sort_values("rank").iloc[0]["scheme_name"] if len(active_df) else ""
+    suggestions = [
+        "top 10 funds",
+        "highest brokerage funds",
+        "midcap funds",
+        "top clients by AUM",
+        f"best alternative to {top_scheme}" if top_scheme else "best alternative to Kotak Midcap Fund",
+    ]
+
+    s1, s2, s3, s4, s5 = st.columns(5)
+    suggestion_clicked = None
+    for i, (col, suggestion) in enumerate(zip([s1, s2, s3, s4, s5], suggestions)):
+        with col:
+            if st.button(suggestion, key=f"qa_sug_{i}", use_container_width=True):
+                suggestion_clicked = suggestion
+
+    st.markdown("### Ask a Question")
+    with st.form("qa_query_form", clear_on_submit=False):
+        user_query = st.text_input(
+            "Type your question",
+            value=st.session_state.get("qa_last_input", ""),
+            placeholder="Example: Which hybrid mutual fund scheme is offering the highest brokerage?",
+        )
+        submitted = st.form_submit_button("Run Query", type="primary")
+
+    run_query_text = None
+    if suggestion_clicked:
+        run_query_text = suggestion_clicked
+        st.session_state["qa_last_input"] = suggestion_clicked
+    elif submitted and user_query.strip():
+        run_query_text = user_query.strip()
+        st.session_state["qa_last_input"] = run_query_text
+
+    if run_query_text:
+        scheme_names = active_df["scheme_name"].dropna().astype(str).unique().tolist()
+        parsed = parse_query(run_query_text, scheme_names=scheme_names)
+        context = {
+            "active_df": active_df,
+            "risk_profile": risk_profile,
+            "ci_business_df": st.session_state.get("ci_business_df"),
+            "ci_sip_df": st.session_state.get("ci_sip_df"),
+        }
+        result = execute_query(parsed, context)
+
+        st.session_state["qa_history"].append({
+            "query": run_query_text,
+            "intent": parsed.get("intent", "unknown"),
+            "ok": bool(result.get("ok", False)),
+        })
+
+        st.markdown(f"### {result.get('title', 'Results')}")
+        st.caption(result.get("message", ""))
+
+        warnings = result.get("warnings", []) or []
+        for w in warnings:
+            st.warning(w)
+
+        applied_filters = result.get("applied_filters", []) or []
+        if applied_filters:
+            st.caption("Applied filters: " + " | ".join(applied_filters))
+
+        result_df = result.get("result_df", pd.DataFrame())
+        if isinstance(result_df, pd.DataFrame) and not result_df.empty:
+            show_df = result_df.copy()
+
+            # Best-result emphasis by styling the first row.
+            def highlight_top_row(row):
+                if row.name == 0 and result.get("highlight_top", False):
+                    return ["background-color: #ecfeff; font-weight: 600"] * len(row)
+                return [""] * len(row)
+
+            st.dataframe(
+                show_df.style.apply(highlight_top_row, axis=1),
+                use_container_width=True,
+                height=min(560, 90 + 35 * len(show_df)),
+            )
+        else:
+            st.info("No rows matched this query.")
+
+    st.markdown("### Example Queries")
+    st.markdown(
+        "- Which midcap mutual fund scheme is the best alternative to Kotak Midcap Fund?\n"
+        "- Which hybrid mutual fund scheme is offering the highest brokerage?\n"
+        "- Give me top 10 clients by highest AUM"
+    )
+
+    if st.session_state.get("qa_history"):
+        st.markdown("### Recent Queries")
+        history_df = pd.DataFrame(st.session_state["qa_history"][-8:])
+        st.dataframe(history_df, use_container_width=True, height=min(320, 80 + 35 * len(history_df)))
 
 # ═══════════════════════════════════════════════════════════
 # PAGE 8 — UPLOAD AUM DATA
